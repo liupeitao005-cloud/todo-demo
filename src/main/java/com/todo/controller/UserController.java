@@ -1,6 +1,6 @@
 package com.todo.controller;
 
-import com.todo.entity.UserRequest;
+import com.todo.dto.UserRequest;
 import com.todo.service.UserService;
 import com.todo.util.Result;
 import lombok.RequiredArgsConstructor;

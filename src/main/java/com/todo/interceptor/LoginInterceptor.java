@@ -20,7 +20,6 @@ public class LoginInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String uri = request.getRequestURI();
         System.out.println("收到请求URI：" + uri);
-        // 先判断路径，登录注册直接放行，不走token校验
         if ("/user/login".equals(uri) || "/user/register".equals(uri)) {
             return true;
         }

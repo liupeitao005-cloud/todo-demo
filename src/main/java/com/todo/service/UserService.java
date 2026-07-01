@@ -1,7 +1,7 @@
 package com.todo.service;
 
 import com.todo.entity.TodoUser;
-import com.todo.entity.UserRequest;
+import com.todo.dto.UserRequest;
 import com.todo.mapper.UserMapper;
 import com.todo.util.JwtUtil;
 import com.todo.util.Result;
