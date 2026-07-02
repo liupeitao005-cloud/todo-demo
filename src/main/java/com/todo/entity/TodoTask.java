@@ -11,6 +11,7 @@ public class TodoTask {
     private String title;
     private String content;
     private String taskType;
+    private Long parentId;
     private LocalDateTime finishTime;
     private Integer isFinish;
     private LocalDateTime createTime;

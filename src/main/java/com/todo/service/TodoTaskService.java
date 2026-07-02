@@ -26,6 +26,7 @@ public class TodoTaskService {
         task.setTitle(dto.getTitle());
         task.setContent(dto.getContent());
         task.setTaskType(dto.getTaskType());
+        task.setParentId(dto.getParentId() == null ? 0L : dto.getParentId());
 
         todoTaskMapper.insert(task);
         return Result.success("创建成功");
