@@ -23,7 +23,6 @@ public class TodoScheduleService {
         if (dto.getStartTime() == null || dto.getFinishTime() == null) {
             return Result.fail("行程时间不能为空");
         }
-
         TodoSchedule schedule = new TodoSchedule();
         schedule.setUserId(userId);
         schedule.setTitle(dto.getTitle());
@@ -39,7 +38,6 @@ public class TodoScheduleService {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
         if (dto == null || dto.getId() == null) return Result.fail("缺少行程id");
-
         TodoSchedule schedule = new TodoSchedule();
         schedule.setId(dto.getId());
         schedule.setUserId(userId);
@@ -48,7 +46,6 @@ public class TodoScheduleService {
         schedule.setLocation(dto.getLocation());
         schedule.setStartTime(dto.getStartTime());
         schedule.setFinishTime(dto.getFinishTime());
-
         int row = todoScheduleMapper.update(schedule);
         if (row <= 0) return Result.fail("行程不存在或无权限修改");
         return Result.success("修改成功");
@@ -58,11 +55,9 @@ public class TodoScheduleService {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
         if (dto == null || dto.getId() == null) return Result.fail("缺少行程id");
-
         TodoSchedule schedule = new TodoSchedule();
         schedule.setId(dto.getId());
         schedule.setUserId(userId);
-
         int row = todoScheduleMapper.delete(schedule);
         if (row <= 0) return Result.fail("行程不存在或无权限删除");
         return Result.success("删除成功");

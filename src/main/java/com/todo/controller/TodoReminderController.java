@@ -1,14 +1,11 @@
 package com.todo.controller;
 
 import com.todo.dto.TodoReminderDTO;
-import com.todo.entity.TodoReminder;
 import com.todo.service.TodoReminderService;
 import com.todo.util.Result;
+import com.todo.vo.TodoReminderVO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -23,17 +20,21 @@ public class TodoReminderController {
         return todoReminderService.createReminder(dto);
     }
 
-    @PostMapping("/pending")
-    public Result<List<TodoReminder>> pending() {
+    @GetMapping("/pending")
+    public Result<List<TodoReminderVO>> pending() {
         return todoReminderService.pendingDesktopReminder();
     }
 
-    @PostMapping("/app/pending")
-    public Result<List<TodoReminder>> appPending() {
+    @GetMapping("/app/pending")
+    public Result<List<TodoReminderVO>> appPending() {
         return todoReminderService.pendingAppReminder();
     }
+    @GetMapping("/telegramBot/pending")
+    public Result<List<TodoReminderVO>> telegramBotPending() {
+        return todoReminderService.pendingTelegramBotReminder();
+    }
 
-    @PostMapping("/read")
+    @PutMapping("/read")
     public Result<String> read(@RequestBody TodoReminderDTO dto) {
         return todoReminderService.readReminder(dto);
     }

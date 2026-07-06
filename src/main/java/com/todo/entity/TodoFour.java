@@ -1,16 +1,21 @@
 package com.todo.entity;
 
+
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
-public class TodoCalendarItem {
+public class TodoFour {
     private Long id;
+    private Long userId;
     private String title;
     private String content;
-    private String location;
+    private Integer importance;
+    private Integer urgency;
     private LocalDateTime startTime;
     private LocalDateTime finishTime;
-    private String itemType;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
+
 }

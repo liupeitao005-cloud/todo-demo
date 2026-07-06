@@ -1,13 +1,12 @@
 package com.todo.controller;
 
+import com.todo.dto.TodoBacklogDTO;
+import com.todo.dto.TodoFourDTO;
 import com.todo.dto.TodoTaskDTO;
 import com.todo.service.TodoTaskService;
 import com.todo.util.Result;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/task")
@@ -17,23 +16,32 @@ public class TodoTaskController {
 
     @PostMapping("/create")
     public Result<String> create(@RequestBody TodoTaskDTO dto) {
-
         return todoTaskService.createTodoTask(dto);
     }
-
-    @PostMapping("/update")
+    @PutMapping("/update")
     public Result<String> update(@RequestBody TodoTaskDTO dto) {
-
         return todoTaskService.updateTodoTask(dto);
     }
-
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public Result<String> delete(@RequestBody TodoTaskDTO dto) {
         return todoTaskService.deleteTodoTask(dto.getId());
     }
-
-    @PostMapping("/finish")
+    @PutMapping("/finish")
     public Result<String> finish(@RequestBody TodoTaskDTO dto) {
         return todoTaskService.finishTodoTask(dto.getId());
     }
+    @PutMapping("/split")
+    public Result<String>split(@RequestBody TodoTaskDTO dto){
+        return  todoTaskService.qiegehour(dto.getId());
+    }
+    @PutMapping("/goout")
+    public Result<String>yanqi(@RequestBody TodoTaskDTO dto){
+        return  todoTaskService.yanqi(dto.getId());
+    }
+    @PutMapping("/next")
+    public Result<String>next(@RequestBody TodoTaskDTO dto){
+        return  todoTaskService.nextTodoTask(dto.getId());
+    }
+
 }
+

@@ -1,21 +1,18 @@
 package com.todo.entity;
 
+
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
-public class TodoTask {
+public class TodoReviewplan {
     private Long id;
     private Long userId;
-    private String title;
-    private String content;
-    private String taskType;
-    private Long parentId;
-    private  LocalDateTime startTime;
-    private LocalDateTime finishTime;
+    private Long reviewTaskId;
+    private LocalDateTime reviewTime;
     private Integer isFinish;
-    private Integer isNext;
+    private LocalDateTime finishTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

@@ -15,7 +15,6 @@ public class TodoHabbitController {
 
     @PostMapping("/create")
     public Result<String> create (@RequestBody TodoHabbitDTO dto){
-
         return todoHabbitService.createHabbit(dto);
     }
 }

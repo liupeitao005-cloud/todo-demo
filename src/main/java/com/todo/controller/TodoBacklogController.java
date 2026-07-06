@@ -2,12 +2,9 @@ package com.todo.controller;
 
 import com.todo.dto.TodoBacklogDTO;
 import com.todo.util.Result;
-import org.springframework.web.bind.annotation.PostMapping;
 import com.todo.service.TodoBacklogService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("backlog")
@@ -18,9 +15,12 @@ public class TodoBacklogController {
     public Result<String> create(@RequestBody TodoBacklogDTO dto){
         return todoBacklogService.createtodoBacklog(dto);
     }
-
-    @PostMapping("/update")
+    @PutMapping("/update")
     public Result<String> update(@RequestBody TodoBacklogDTO dto){
         return todoBacklogService.updateBacklog(dto);
+    }
+    @PostMapping("/move")
+    public Result<String> move(@RequestBody TodoBacklogDTO dto) {
+        return todoBacklogService.moveTodoBacklog(dto);
     }
 }

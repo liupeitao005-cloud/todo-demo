@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todo 待办与日程管理系统</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #1f2937;
+      background: #f3f6fb;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 22px;
+      background: #fff;
+      border-bottom: 1px solid #d8dee9;
+    }
+    h1 { margin: 0; font-size: 20px; }
+    h2 { margin: 0 0 8px; font-size: 16px; }
+    h3 { margin: 0 0 8px; font-size: 14px; }
+    main {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) 360px;
+      gap: 16px;
+      padding: 10px 22px 22px;
+    }
+    section, aside {
+      background: #fff;
+      border: 1px solid #d8dee9;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    nav {
+      position: sticky;
+      top: 74px;
+      display: grid;
+      gap: 8px;
+      align-self: start;
+    }
+    nav button {
+      justify-content: flex-start;
+      color: #334155;
+      border-color: #cbd5e1;
+      background: #fff;
+    }
+    nav button.active {
+      color: #fff;
+      border-color: #2563eb;
+      background: #2563eb;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      color: #4b5563;
+      font-size: 13px;
+    }
+    input, textarea, select {
+      width: 100%;
+      min-height: 36px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #111827;
+      background: #fff;
+      font: inherit;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      border: 1px solid #2563eb;
+      border-radius: 6px;
+      padding: 7px 12px;
+      color: #fff;
+      background: #2563eb;
+      cursor: pointer;
+      font: inherit;
+      white-space: nowrap;
+    }
+    button.secondary {
+      color: #1f2937;
+      border-color: #cbd5e1;
+      background: #fff;
+    }
+    button.danger {
+      border-color: #dc2626;
+      background: #dc2626;
+    }
+    .grid { display: grid; gap: 10px; }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .row3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .panel { display: none; }
+    .panel.active { display: grid; gap: 10px; }
+    .card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+    .status { min-height: 22px; color: #475569; }
+    .status.ok { color: #047857; }
+    .status.err { color: #b91c1c; }
+    .token {
+      max-width: 780px;
+      overflow: hidden;
+      color: #64748b;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .muted { color: #64748b; }
+    .result {
+      min-height: 280px;
+      max-height: calc(100vh - 170px);
+      overflow: auto;
+      margin: 0;
+      padding: 12px;
+      color: #111827;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .list { display: grid; gap: 10px; }
+    .item {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .time { color: #334155; font-weight: 700; }
+    .badge {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: #0f172a;
+      background: #e2e8f0;
+      font-size: 12px;
+    }
+    .badge.task { color: #166534; background: #dcfce7; }
+    .badge.schedule { color: #075985; background: #e0f2fe; }
+    body.logged-out main {
+      grid-template-columns: minmax(0, 520px);
+      justify-content: center;
+    }
+    body.logged-out nav,
+    body.logged-out aside,
+    body.logged-out #clearTokenBtn,
+    body.logged-out .panel:not(#authPanel),
+    body.logged-in #authPanel,
+    body.logged-in nav button[data-panel="authPanel"] {
+      display: none;
+    }
+    @media (max-width: 1100px) {
+      main { grid-template-columns: 220px minmax(0, 1fr); }
+      aside { grid-column: 1 / -1; }
+      .result { max-height: 360px; }
+    }
+    @media (max-width: 760px) {
+      header { align-items: flex-start; flex-direction: column; }
+      main { grid-template-columns: 1fr; padding: 10px; }
+      nav { position: static; }
+      .row, .row3, .item { grid-template-columns: 1fr; }
+    }
+    body.logged-out main {
+      grid-template-columns: minmax(0, 520px);
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Todo 待办与日程管理系统</h1>
+      <div class="token" id="tokenText">未登录</div>
+    </div>
+    <div class="actions">
+      <button class="secondary" id="clearTokenBtn">退出登录</button>
+    </div>
+  </header>
+
+  <main>
+    <nav>
+      <button class="active" data-panel="authPanel">账号</button>
+      <button data-panel="backlogPanel">待办箱</button>
+      <button data-panel="taskPanel">任务管理</button>
+      <button data-panel="schedulePanel">行程管理</button>
+      <button data-panel="calendarPanel">日程视图</button>
+      <button data-panel="habbitPanel">习惯管理</button>
+      <button data-panel="fourPanel">四象限</button>
+      <button data-panel="reviewPanel">艾宾浩斯</button>
+      <button data-panel="reminderPanel">桌面提醒</button>
+    </nav>
+
+    <div class="grid">
+      <section id="authPanel" class="panel active">
+        <h2>账号</h2>
+        <div class="card grid">
+          <div class="row">
+            <label>用户名
+              <input id="username" autocomplete="username" placeholder="test">
+            </label>
+            <label>密码
+              <input id="password" type="password" autocomplete="current-password" placeholder="123456">
+            </label>
+          </div>
+          <div class="actions">
+            <button id="loginBtn">登录</button>
+            <button class="secondary" id="registerBtn">注册</button>
+          </div>
+          <div class="status" id="authStatus"></div>
+        </div>
+      </section>
+
+      <section id="backlogPanel" class="panel">
+        <h2>待办箱</h2>
+        <div class="card grid">
+          <label>待办 ID
+            <input id="backlogId" type="number" placeholder="修改或安排时填写">
+          </label>
+          <div class="row">
+            <label>标题
+              <input id="backlogTitle" placeholder="整理资料">
+            </label>
+            <label>内容
+              <input id="backlogContent" placeholder="暂时没有明确执行时间的事项">
+            </label>
+          </div>
+          <div class="row">
+            <label>安排开始时间
+              <input id="backlogStart" type="datetime-local">
+            </label>
+            <label>安排结束时间
+              <input id="backlogFinish" type="datetime-local">
+            </label>
+          </div>
+          <div class="actions">
+            <button id="createBacklogBtn">创建待办</button>
+            <button class="secondary" id="updateBacklogBtn">修改待办</button>
+            <button class="secondary" id="moveBacklogBtn">安排为任务</button>
+          </div>
+          <div class="status" id="backlogStatus"></div>
+        </div>
+      </section>
+
+      <section id="taskPanel" class="panel">
+        <h2>任务管理</h2>
+        <div class="card grid">
+          <label>任务 ID
+            <input id="taskId" type="number" placeholder="修改、删除、完成、拆分、延期时填写">
+          </label>
+          <div class="row">
+            <label>标题
+              <input id="taskTitle" placeholder="写项目文档">
+            </label>
+            <label>任务类型
+              <input id="taskType" placeholder="normal / long / once">
+            </label>
+          </div>
+          <label>内容
+            <textarea id="taskContent" placeholder="任务内容"></textarea>
+          </label>
+          <div class="row3">
+            <label>父任务 ID
+              <input id="taskParentId" type="number" placeholder="子任务可填">
+            </label>
+            <label>开始时间
+              <input id="taskStart" type="datetime-local">
+            </label>
+            <label>结束时间
+              <input id="taskFinish" type="datetime-local">
+            </label>
+          </div>
+          <div class="actions">
+            <button id="createTaskBtn">创建任务</button>
+            <button class="secondary" id="updateTaskBtn">修改任务</button>
+            <button class="secondary" id="finishTaskBtn">完成任务</button>
+            <button class="secondary" id="splitTaskBtn">按小时拆分</button>
+            <button class="secondary" id="delayTaskBtn">自动延期</button>
+            <button class="secondary" id="nextTaskBtn">设为下一个</button>
+            <button class="danger" id="deleteTaskBtn">删除任务</button>
+          </div>
+          <div class="status" id="taskStatus"></div>
+        </div>
+      </section>
+
+      <section id="schedulePanel" class="panel">
+        <h2>行程管理</h2>
+        <div class="card grid">
+          <label>行程 ID
+            <input id="scheduleId" type="number" placeholder="修改或删除时填写">
+          </label>
+          <div class="row">
+            <label>标题
+              <input id="scheduleTitle" placeholder="项目会议">
+            </label>
+            <label>地点
+              <input id="scheduleLocation" placeholder="会议室 A">
+            </label>
+          </div>
+          <label>内容
+            <textarea id="scheduleContent" placeholder="行程内容"></textarea>
+          </label>
+          <div class="row">
+            <label>开始时间
+              <input id="scheduleStart" type="datetime-local">
+            </label>
+            <label>结束时间
+              <input id="scheduleFinish" type="datetime-local">
+            </label>
+          </div>
+          <div class="actions">
+            <button id="createScheduleBtn">创建行程</button>
+            <button class="secondary" id="updateScheduleBtn">修改行程</button>
+            <button class="danger" id="deleteScheduleBtn">删除行程</button>
+          </div>
+          <div class="status" id="scheduleStatus"></div>
+        </div>
+      </section>
+
+      <section id="calendarPanel" class="panel">
+        <h2>日程视图</h2>
+        <div class="card grid">
+          <div class="row3">
+            <label>视图
+              <select id="viewMode">
+                <option value="day">日视图</option>
+                <option value="week">周视图</option>
+                <option value="month">月视图</option>
+                <option value="year">年视图</option>
+                <option value="custom">自定义视图</option>
+              </select>
+            </label>
+            <label id="calendarPointLabel"><span id="calendarPointText">日期</span>
+              <input id="viewDate" type="date">
+            </label>
+            <label>数量
+              <input id="calendarCount" readonly value="0 条">
+            </label>
+          </div>
+          <div class="row" id="customRangeRow">
+            <label>自定义开始时间
+              <input id="customStart" type="datetime-local">
+            </label>
+            <label>自定义结束时间
+              <input id="customFinish" type="datetime-local">
+            </label>
+          </div>
+          <div class="actions">
+            <button id="loadCalendarBtn">查询日程</button>
+            <button class="secondary" id="todayBtn">今天</button>
+          </div>
+          <div class="muted" id="rangeText">请选择日期查询</div>
+          <div class="status" id="calendarStatus"></div>
+          <div class="list" id="calendarList"></div>
+        </div>
+      </section>
+
+      <section id="habbitPanel" class="panel">
+        <h2>习惯管理</h2>
+        <div class="card grid">
+          <div class="row">
+            <label>习惯标题
+              <input id="habbitTitle" placeholder="阅读">
+            </label>
+            <label>习惯内容
+              <input id="habbitContent" placeholder="每天阅读">
+            </label>
+          </div>
+          <div class="row3">
+            <label>每日总分钟
+              <input id="habbitDayMinutes" type="number" placeholder="60">
+            </label>
+            <label>单次最少分钟
+              <input id="habbitMinMinutes" type="number" placeholder="20">
+            </label>
+            <label>单次最多分钟
+              <input id="habbitMaxMinutes" type="number" placeholder="30">
+            </label>
+          </div>
+          <div class="actions">
+            <button id="createHabbitBtn">创建习惯</button>
+          </div>
+          <div class="status" id="habbitStatus"></div>
+        </div>
+      </section>
+
+      <section id="fourPanel" class="panel">
+        <h2>四象限</h2>
+        <div class="card grid">
+          <div class="row3">
+            <label>任务 ID
+              <input id="fourTaskId" type="number" placeholder="放入四象限时填写">
+            </label>
+            <label>重要性
+              <select id="fourImportance">
+                <option value="1">重要</option>
+                <option value="0">不重要</option>
+              </select>
+            </label>
+            <label>紧急性
+              <select id="fourUrgency">
+                <option value="1">紧急</option>
+                <option value="0">不紧急</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions">
+            <button id="moveFourBtn">放入四象限</button>
+            <button class="secondary" id="selectFourBtn">查询象限</button>
+          </div>
+          <div class="status" id="fourStatus"></div>
+        </div>
+      </section>
+
+      <section id="reviewPanel" class="panel">
+        <h2>艾宾浩斯复习</h2>
+        <div class="card grid">
+          <div class="row">
+            <label>复习标题
+              <input id="reviewTitle" placeholder="英语单词 Unit 1">
+            </label>
+            <label>复习计划 ID
+              <input id="reviewPlanId" type="number" placeholder="完成复习时填写 planId">
+            </label>
+          </div>
+          <label>复习内容
+            <textarea id="reviewContent" placeholder="需要复习的内容"></textarea>
+          </label>
+          <div class="actions">
+            <button id="createReviewBtn">创建复习任务</button>
+            <button class="secondary" id="finishReviewBtn">完成复习计划</button>
+          </div>
+          <div class="muted">当前后端没有复习计划查询接口，完成复习需要手动填写 todo_reviewplan 的 id。</div>
+          <div class="status" id="reviewStatus"></div>
+        </div>
+      </section>
+
+      <section id="reminderPanel" class="panel">
+        <h2>桌面提醒</h2>
+        <div class="card grid">
+          <div class="row3">
+            <label>提醒对象
+              <select id="reminderTargetType">
+                <option value="task">任务</option>
+                <option value="schedule">行程</option>
+                <option value="review">复习</option>
+              </select>
+            </label>
+            <label>对象 ID
+              <input id="reminderTargetId" type="number" placeholder="任务/行程/复习计划 ID">
+            </label>
+            <label>渠道
+              <select id="reminderChannel">
+                <option value="desktop">桌面通知</option>
+                <option value="telegramBot">Telegram Bot</option>
+                <option value="app">App</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label>标题
+              <input id="reminderTitle" placeholder="任务提醒">
+            </label>
+            <label>提醒时间
+              <input id="reminderTime" type="datetime-local">
+            </label>
+          </div>
+          <label>内容
+            <textarea id="reminderContent" placeholder="提醒内容"></textarea>
+          </label>
+          <div class="actions">
+            <button id="createReminderBtn">创建提醒</button>
+            <button class="secondary" id="requestNotifyBtn">开启通知权限</button>
+            <button class="secondary" id="checkReminderBtn">检查到期提醒</button>
+            <button class="secondary" id="toggleReminderBtn">开始自动检查</button>
+          </div>
+          <div class="status" id="reminderStatus"></div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="grid">
+      <h2>接口返回</h2>
+      <pre class="result" id="resultBox">等待请求...</pre>
+      <div class="muted">这里显示最近一次接口返回，方便演示和联调。</div>
+    </aside>
+  </main>
+
+  <script>
+    const tokenKey = "todo-token";
+    let reminderTimer = null;
+    const notifiedIds = new Set();
+    const $ = (id) => document.getElementById(id);
+
+    function getToken() {
+      return localStorage.getItem(tokenKey) || "";
+    }
+
+    function setToken(token) {
+      if (token) localStorage.setItem(tokenKey, token);
+      else localStorage.removeItem(tokenKey);
+      renderToken();
+      updateAuthView();
+    }
+
+    function renderToken() {
+      const token = getToken();
+      $("tokenText").textContent = token ? "已登录，token: " + token : "未登录";
+    }
+
+    function switchPanel(panelId) {
+      document.querySelectorAll("nav button").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.panel === panelId);
+      });
+      document.querySelectorAll(".panel").forEach((panel) => {
+        panel.classList.toggle("active", panel.id === panelId);
+      });
+    }
+
+    function updateAuthView() {
+      const loggedIn = Boolean(getToken());
+      document.body.classList.toggle("logged-in", loggedIn);
+      document.body.classList.toggle("logged-out", !loggedIn);
+      if (loggedIn) {
+        const current = document.querySelector(".panel.active");
+        if (!current || current.id === "authPanel") switchPanel("backlogPanel");
+      } else {
+        switchPanel("authPanel");
+      }
+    }
+
+    function setStatus(id, text, ok) {
+      const el = $(id);
+      el.textContent = text || "";
+      el.className = "status" + (text ? (ok ? " ok" : " err") : "");
+    }
+
+    function showResult(data) {
+      $("resultBox").textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    }
+
+    function value(id) {
+      return $(id).value.trim();
+    }
+
+    function numberOrNull(id) {
+      const v = value(id);
+      return v ? Number(v) : null;
+    }
+
+    function dateTimeOrNull(id) {
+      return $(id).value || null;
+    }
+
+    function buildQuery(query) {
+      const params = new URLSearchParams();
+      Object.entries(query || {}).forEach(([key, val]) => {
+        if (val !== null && val !== undefined && val !== "") params.append(key, val);
+      });
+      const text = params.toString();
+      return text ? "?" + text : "";
+    }
+
+    async function api(path, options = {}) {
+      const method = options.method || "POST";
+      const headers = { "Content-Type": "application/json" };
+      const token = getToken();
+      if (options.needToken !== false && token) headers.token = token;
+
+      const requestOptions = { method, headers };
+      if (method !== "GET") requestOptions.body = JSON.stringify(options.body || {});
+
+      const response = await fetch(path + buildQuery(options.query), requestOptions);
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (error) {
+        data = { code: response.status, message: text || "响应解析失败", data: null };
+      }
+      if (!response.ok && !data.message) data.message = "请求失败：" + response.status;
+      showResult(data);
+      return data;
+    }
+
+    async function submit(statusId, path, options = {}) {
+      setStatus(statusId, "请求中...", true);
+      try {
+        const result = await api(path, options);
+        setStatus(statusId, result.message || "完成", result.code === 200);
+        return result;
+      } catch (error) {
+        showResult(String(error));
+        setStatus(statusId, error.message || "请求失败", false);
+        return null;
+      }
+    }
+
+    function taskBody() {
+      return {
+        id: numberOrNull("taskId"),
+        title: value("taskTitle"),
+        content: value("taskContent"),
+        taskType: value("taskType"),
+        parentId: numberOrNull("taskParentId"),
+        startTime: dateTimeOrNull("taskStart"),
+        finishTime: dateTimeOrNull("taskFinish")
+      };
+    }
+
+    function backlogBody() {
+      return {
+        id: numberOrNull("backlogId"),
+        title: value("backlogTitle"),
+        content: value("backlogContent"),
+        startTime: dateTimeOrNull("backlogStart"),
+        finishTime: dateTimeOrNull("backlogFinish")
+      };
+    }
+
+    function scheduleBody() {
+      return {
+        id: numberOrNull("scheduleId"),
+        title: value("scheduleTitle"),
+        content: value("scheduleContent"),
+        location: value("scheduleLocation"),
+        startTime: dateTimeOrNull("scheduleStart"),
+        finishTime: dateTimeOrNull("scheduleFinish")
+      };
+    }
+
+    function habbitBody() {
+      return {
+        title: value("habbitTitle"),
+        content: value("habbitContent"),
+        dayMinutes: numberOrNull("habbitDayMinutes"),
+        minMinutes: numberOrNull("habbitMinMinutes"),
+        maxMinutes: numberOrNull("habbitMaxMinutes")
+      };
+    }
+
+    function fourBody() {
+      return {
+        id: numberOrNull("fourTaskId"),
+        importance: Number($("fourImportance").value),
+        urgency: Number($("fourUrgency").value)
+      };
+    }
+
+    function reviewBody() {
+      return {
+        title: value("reviewTitle"),
+        content: value("reviewContent")
+      };
+    }
+
+    function reminderBody() {
+      return {
+        targetType: $("reminderTargetType").value,
+        targetId: numberOrNull("reminderTargetId"),
+        title: value("reminderTitle"),
+        content: value("reminderContent"),
+        remindTime: dateTimeOrNull("reminderTime"),
+        channel: $("reminderChannel").value
+      };
+    }
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function toDateInputValue(date) {
+      return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate());
+    }
+
+    function toMonthInputValue(date) {
+      return date.getFullYear() + "-" + pad(date.getMonth() + 1);
+    }
+
+    function getIsoWeek(date) {
+      const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const day = target.getUTCDay() || 7;
+      target.setUTCDate(target.getUTCDate() + 4 - day);
+      const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+      const week = Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+      return target.getUTCFullYear() + "-W" + pad(week);
+    }
+
+    function startOfIsoWeek(weekValue) {
+      const match = /^(\d{4})-W(\d{2})$/.exec(weekValue || "");
+      if (!match) return null;
+      const year = Number(match[1]);
+      const week = Number(match[2]);
+      const jan4 = new Date(year, 0, 4);
+      const jan4Day = jan4.getDay() || 7;
+      const week1Monday = addDays(startOfDay(jan4), 1 - jan4Day);
+      return addDays(week1Monday, (week - 1) * 7);
+    }
+
+    function toDateTimeValue(date) {
+      return toDateInputValue(date) + "T" + pad(date.getHours()) + ":" + pad(date.getMinutes());
+    }
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function getCalendarRange() {
+      const mode = $("viewMode").value;
+      if (mode === "custom") {
+        return {
+          startText: dateTimeOrNull("customStart"),
+          finishText: dateTimeOrNull("customFinish")
+        };
+      }
+      const inputValue = $("viewDate").value;
+      if (mode === "day") {
+        const current = startOfDay(new Date((inputValue || toDateInputValue(new Date())) + "T00:00:00"));
+        return { start: current, finish: addDays(current, 1) };
+      }
+      if (mode === "week") {
+        const start = startOfIsoWeek(inputValue || getIsoWeek(new Date()));
+        if (!start) return { startText: null, finishText: null };
+        return { start, finish: addDays(start, 7) };
+      }
+      if (mode === "month") {
+        const monthValue = inputValue || toMonthInputValue(new Date());
+        const [year, month] = monthValue.split("-").map(Number);
+        const start = new Date(year, month - 1, 1);
+        const finish = new Date(year, month, 1);
+        return { start, finish };
+      }
+      if (mode === "year") {
+        const year = Number(inputValue || new Date().getFullYear());
+        const start = new Date(year, 0, 1);
+        const finish = new Date(year + 1, 0, 1);
+        return { start, finish };
+      }
+      const current = startOfDay(new Date(toDateInputValue(new Date()) + "T00:00:00"));
+      return { start: current, finish: addDays(current, 1) };
+    }
+
+    function formatDateTime(value) {
+      return value ? value.replace("T", " ").slice(0, 16) : "";
+    }
+
+    function formatTime(value) {
+      return value ? value.replace("T", " ").slice(11, 16) : "";
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function itemTypeText(type) {
+      return type === "task" ? "任务" : "行程";
+    }
+
+    function renderCalendar(items) {
+      const list = $("calendarList");
+      list.innerHTML = "";
+      $("calendarCount").value = items.length + " 条";
+      if (!items.length) {
+        list.innerHTML = '<div class="muted">这个时间范围内没有任务或行程。</div>';
+        return;
+      }
+      items.forEach((item) => {
+        const type = item.itemType || "schedule";
+        const el = document.createElement("div");
+        el.className = "item";
+        el.innerHTML = `
+          <div class="time">${formatTime(item.startTime)}</div>
+          <div>
+            <h3>${escapeHtml(item.title || "未命名")}</h3>
+            <div class="muted">${escapeHtml(item.content || "")}</div>
+            <div class="muted">${formatDateTime(item.startTime)} - ${formatDateTime(item.finishTime)}</div>
+            ${item.location ? `<div class="muted">${escapeHtml(item.location)}</div>` : ""}
+          </div>
+          <span class="badge ${type}">${itemTypeText(type)}</span>
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    async function loadCalendar() {
+      const range = getCalendarRange();
+      const query = {
+        startTime: range.startText || (range.start ? toDateTimeValue(range.start) : null),
+        finishTime: range.finishText || (range.finish ? toDateTimeValue(range.finish) : null)
+      };
+      if (!query.startTime || !query.finishTime) {
+        setStatus("calendarStatus", "请选择有效的开始时间和结束时间", false);
+        return;
+      }
+      $("rangeText").textContent = query.startTime.replace("T", " ") + " 至 " + query.finishTime.replace("T", " ");
+      const result = await submit("calendarStatus", "/calendar/select", { method: "GET", query });
+      renderCalendar(Array.isArray(result?.data) ? result.data : []);
+    }
+
+    function syncCalendarPicker() {
+      const mode = $("viewMode").value;
+      const input = $("viewDate");
+      const now = new Date();
+      $("customRangeRow").style.display = mode === "custom" ? "grid" : "none";
+      $("calendarPointLabel").style.display = mode === "custom" ? "none" : "grid";
+
+      if (mode === "day") {
+        $("calendarPointText").textContent = "日期";
+        input.type = "date";
+        input.removeAttribute("min");
+        input.removeAttribute("max");
+        input.removeAttribute("step");
+        input.value = toDateInputValue(now);
+      } else if (mode === "week") {
+        $("calendarPointText").textContent = "周";
+        input.type = "week";
+        input.removeAttribute("min");
+        input.removeAttribute("max");
+        input.removeAttribute("step");
+        input.value = getIsoWeek(now);
+      } else if (mode === "month") {
+        $("calendarPointText").textContent = "月份";
+        input.type = "month";
+        input.removeAttribute("min");
+        input.removeAttribute("max");
+        input.removeAttribute("step");
+        input.value = toMonthInputValue(now);
+      } else if (mode === "year") {
+        $("calendarPointText").textContent = "年份";
+        input.type = "number";
+        input.min = "1970";
+        input.max = "2099";
+        input.step = "1";
+        input.value = String(now.getFullYear());
+      }
+    }
+
+    async function requestNotificationPermission() {
+      if (!("Notification" in window)) {
+        setStatus("reminderStatus", "当前浏览器不支持桌面通知", false);
+        return;
+      }
+      const permission = Notification.permission === "granted"
+        ? "granted"
+        : await Notification.requestPermission();
+      setStatus("reminderStatus", permission === "granted" ? "桌面通知已开启" : "未获得桌面通知权限", permission === "granted");
+    }
+
+    async function markReminderRead(id) {
+      if (id) await api("/reminder/read", { method: "PUT", body: { id } });
+    }
+
+    async function checkReminders(showEmptyMessage = false) {
+      const result = await submit("reminderStatus", "/reminder/pending", { method: "GET" });
+      const reminders = Array.isArray(result?.data) ? result.data : [];
+      if (!reminders.length && showEmptyMessage) {
+        setStatus("reminderStatus", "暂无到期提醒", true);
+        return;
+      }
+      for (const reminder of reminders) {
+        if (!reminder.id || notifiedIds.has(reminder.id)) continue;
+        notifiedIds.add(reminder.id);
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(reminder.title || "Todo 提醒", {
+            body: reminder.content || "你有一条到期提醒"
+          });
+        }
+        await markReminderRead(reminder.id);
+      }
+      if (reminders.length) setStatus("reminderStatus", "已处理 " + reminders.length + " 条提醒", true);
+    }
+
+    function toggleReminderTimer() {
+      if (reminderTimer) {
+        clearInterval(reminderTimer);
+        reminderTimer = null;
+        $("toggleReminderBtn").textContent = "开始自动检查";
+        setStatus("reminderStatus", "已停止自动检查", true);
+        return;
+      }
+      reminderTimer = setInterval(() => checkReminders(false), 30000);
+      $("toggleReminderBtn").textContent = "停止自动检查";
+      setStatus("reminderStatus", "已开始自动检查，每 30 秒一次", true);
+      checkReminders(false);
+    }
+
+    document.querySelectorAll("nav button").forEach((button) => {
+      button.addEventListener("click", () => {
+        switchPanel(button.dataset.panel);
+      });
+    });
+
+    $("loginBtn").addEventListener("click", async () => {
+      const result = await submit("authStatus", "/user/login", {
+        needToken: false,
+        body: { username: value("username"), password: $("password").value }
+      });
+      if (result?.code === 200 && result.data) setToken(result.data);
+    });
+
+    $("registerBtn").addEventListener("click", () => submit("authStatus", "/user/register", {
+      needToken: false,
+      body: { username: value("username"), password: $("password").value }
+    }));
+
+    $("clearTokenBtn").addEventListener("click", () => {
+      setToken("");
+      setStatus("authStatus", "已退出登录", true);
+      showResult("已清除本地 token");
+    });
+
+    $("createBacklogBtn").addEventListener("click", () => submit("backlogStatus", "/backlog/create", { body: backlogBody() }));
+    $("updateBacklogBtn").addEventListener("click", () => submit("backlogStatus", "/backlog/update", { method: "PUT", body: backlogBody() }));
+    $("moveBacklogBtn").addEventListener("click", () => submit("backlogStatus", "/backlog/move", { body: backlogBody() }));
+
+    $("createTaskBtn").addEventListener("click", () => submit("taskStatus", "/task/create", { body: taskBody() }));
+    $("updateTaskBtn").addEventListener("click", () => submit("taskStatus", "/task/update", { method: "PUT", body: taskBody() }));
+    $("deleteTaskBtn").addEventListener("click", () => submit("taskStatus", "/task/delete", { method: "DELETE", body: { id: numberOrNull("taskId") } }));
+    $("finishTaskBtn").addEventListener("click", () => submit("taskStatus", "/task/finish", { method: "PUT", body: { id: numberOrNull("taskId") } }));
+    $("splitTaskBtn").addEventListener("click", () => submit("taskStatus", "/task/split", { method: "PUT", body: { id: numberOrNull("taskId") } }));
+    $("delayTaskBtn").addEventListener("click", () => submit("taskStatus", "/task/goout", { method: "PUT", body: { id: numberOrNull("taskId") } }));
+    $("nextTaskBtn").addEventListener("click", () => submit("taskStatus", "/task/next", { method: "PUT", body: { id: numberOrNull("taskId") } }));
+
+    $("createScheduleBtn").addEventListener("click", () => submit("scheduleStatus", "/schedule/create", { body: scheduleBody() }));
+    $("updateScheduleBtn").addEventListener("click", () => submit("scheduleStatus", "/schedule/update", { method: "PUT", body: scheduleBody() }));
+    $("deleteScheduleBtn").addEventListener("click", () => submit("scheduleStatus", "/schedule/delete", { method: "DELETE", body: { id: numberOrNull("scheduleId") } }));
+
+    $("loadCalendarBtn").addEventListener("click", loadCalendar);
+    $("viewMode").addEventListener("change", syncCalendarPicker);
+    $("todayBtn").addEventListener("click", () => {
+      syncCalendarPicker();
+      loadCalendar();
+    });
+
+    $("createHabbitBtn").addEventListener("click", () => submit("habbitStatus", "/habbit/create", { body: habbitBody() }));
+
+    $("moveFourBtn").addEventListener("click", () => submit("fourStatus", "/four/move", { body: fourBody() }));
+    $("selectFourBtn").addEventListener("click", () => submit("fourStatus", "/four/select", { method: "GET", query: fourBody() }));
+
+    $("createReviewBtn").addEventListener("click", () => submit("reviewStatus", "/review/create", { body: reviewBody() }));
+    $("finishReviewBtn").addEventListener("click", () => submit("reviewStatus", "/review/finish", {
+      method: "PUT",
+      body: { id: numberOrNull("reviewPlanId") }
+    }));
+
+    $("createReminderBtn").addEventListener("click", () => submit("reminderStatus", "/reminder/create", { body: reminderBody() }));
+    $("requestNotifyBtn").addEventListener("click", requestNotificationPermission);
+    $("checkReminderBtn").addEventListener("click", () => checkReminders(true));
+    $("toggleReminderBtn").addEventListener("click", toggleReminderTimer);
+
+    renderToken();
+    updateAuthView();
+    syncCalendarPicker();
+  </script>
+</body>
+</html>

@@ -4,10 +4,7 @@ import com.todo.dto.TodoScheduleDTO;
 import com.todo.service.TodoScheduleService;
 import com.todo.util.Result;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/schedule")
@@ -20,12 +17,12 @@ public class TodoScheduleController {
         return todoScheduleService.createtodoSchedule(dto);
     }
 
-    @PostMapping("/update")
+    @PutMapping("/update")
     public Result<String> update(@RequestBody TodoScheduleDTO dto) {
         return todoScheduleService.updateTodoSchedule(dto);
     }
 
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public Result<String> delete(@RequestBody TodoScheduleDTO dto) {
         return todoScheduleService.deleteTodoSchedule(dto);
     }
