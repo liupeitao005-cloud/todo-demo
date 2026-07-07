@@ -11,7 +11,7 @@
 
       <nav>
         <RouterLink v-for="item in navItems" :key="item.to" :to="item.to">
-          <span>{{ item.icon }}</span>{{ item.label }}
+          {{ item.label }}
         </RouterLink>
       </nav>
     </aside>
@@ -38,15 +38,14 @@ const route = useRoute();
 const router = useRouter();
 
 const navItems = [
-  { to: "/", label: "项目首页", icon: "🏠" },
-  { to: "/backlogs", label: "待办箱", icon: "📥" },
-  { to: "/tasks", label: "任务管理", icon: "✅" },
-  { to: "/schedules", label: "行程管理", icon: "📍" },
-  { to: "/calendar", label: "日程视图", icon: "📅" },
-  { to: "/habits", label: "习惯管理", icon: "⏱" },
-  { to: "/quadrants", label: "四象限", icon: "🎯" },
-  { to: "/reviews", label: "复习计划", icon: "📚" },
-  { to: "/reminders", label: "提醒通知", icon: "🔔" }
+  { to: "/backlogs", label: "待办箱" },
+  { to: "/tasks", label: "任务管理" },
+  { to: "/schedules", label: "行程管理" },
+  { to: "/calendar", label: "日程视图" },
+  { to: "/habits", label: "习惯管理" },
+  { to: "/quadrants", label: "四象限" },
+  { to: "/reviews", label: "复习计划" },
+  { to: "/reminders", label: "提醒通知" }
 ];
 
 function handleLogout() {

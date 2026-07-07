@@ -11,7 +11,6 @@
         <button :disabled="loading" type="submit">创建复习任务</button>
         <button class="secondary" type="button" @click="finish">完成复习计划</button>
       </div>
-      <p class="hint">当前后端没有复习计划查询接口，完成复习需要填写 todo_reviewplan 表中的 id。</p>
       <p :class="['status', ok ? 'ok' : 'err']">{{ status }}</p>
     </form>
     <ResultPanel :result="result" />
