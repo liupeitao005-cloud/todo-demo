@@ -19,7 +19,7 @@ public class LoginInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String uri = request.getRequestURI();
-        System.out.println("收到请求URI：" + uri);
+        System.out.println("Receive request URI: " + uri);
         if ("/user/login".equals(uri) || "/user/register".equals(uri)) {
             return true;
         }
@@ -47,6 +47,6 @@ public class LoginInterceptor implements HandlerInterceptor {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("{\"code\":401,\"message\":\"未登录\",\"data\":null}");
+        response.getWriter().write("{\"code\":401,\"message\":\"\\u672a\\u767b\\u5f55\",\"data\":null}");
     }
 }
