@@ -36,14 +36,17 @@
 </template>
 
 <script setup>
-import { reactive } from "vue";
+import { onMounted, onUnmounted, reactive } from "vue";
 import ResultPanel from "@/components/ResultPanel.vue";
 import { reminderApi } from "@/api/todoApi";
 import { useRequest } from "@/composables/useRequest";
 
+const POLL_INTERVAL_MS = 60000;
 const form = reactive({ targetType: "task", targetId: null, title: "", content: "", remindTime: "", channel: "desktop" });
 const notifiedIds = new Set();
 const { loading, status, ok, result, run } = useRequest();
+let pollingTimer = null;
+let checking = false;
 
 function create() {
   if (!form.targetId || !form.title || !form.remindTime) return (status.value = "请填写对象 ID、标题和提醒时间"), (ok.value = false);
@@ -54,19 +57,58 @@ async function requestNotify() {
   const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
   ok.value = permission === "granted";
   status.value = ok.value ? "桌面通知已开启" : "未获得桌面通知权限";
+  if (ok.value) check();
 }
-async function check() {
-  const data = await run(() => reminderApi.pending());
+
+async function check(options = {}) {
+  if (checking) return;
+  checking = true;
+  const silent = options?.silent === true;
+  let data = null;
+  try {
+    data = silent ? await reminderApi.pending() : await run(() => reminderApi.pending());
+  } catch {
+    return;
+  } finally {
+    checking = false;
+  }
+  if (!data) return;
   const reminders = Array.isArray(data?.data) ? data.data : [];
-  if (!reminders.length) return (status.value = "暂无到期提醒"), (ok.value = true);
+  if (!reminders.length) {
+    if (!silent) status.value = "暂无到期提醒";
+    ok.value = true;
+    return;
+  }
+  if (!("Notification" in window)) {
+    status.value = `有 ${reminders.length} 条到期提醒，但当前浏览器不支持桌面通知`;
+    ok.value = false;
+    return;
+  }
+  if (Notification.permission !== "granted") {
+    status.value = `有 ${reminders.length} 条到期提醒，请先开启通知权限`;
+    ok.value = false;
+    return;
+  }
+  let handledCount = 0;
   for (const reminder of reminders) {
     if (!reminder.id || notifiedIds.has(reminder.id)) continue;
     notifiedIds.add(reminder.id);
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(reminder.title || "Todo 提醒", { body: reminder.content || "你有一条到期提醒" });
-    }
+    new Notification(reminder.title || "Todo 提醒", { body: reminder.content || "你有一条到期提醒" });
     await reminderApi.read(reminder.id);
+    handledCount++;
   }
-  status.value = `已处理 ${reminders.length} 条提醒`;
+  status.value = handledCount ? `已处理 ${handledCount} 条提醒` : "暂无新的到期提醒";
+  ok.value = true;
 }
+
+onMounted(() => {
+  check();
+  pollingTimer = window.setInterval(() => check({ silent: true }), POLL_INTERVAL_MS);
+});
+
+onUnmounted(() => {
+  if (pollingTimer) {
+    window.clearInterval(pollingTimer);
+  }
+});
 </script>

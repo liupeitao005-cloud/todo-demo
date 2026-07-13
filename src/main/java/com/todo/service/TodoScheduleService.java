@@ -7,21 +7,20 @@ import com.todo.util.Result;
 import com.todo.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class TodoScheduleService {
     private final TodoScheduleMapper todoScheduleMapper;
 
-    public Result<String> createtodoSchedule(TodoScheduleDTO dto) {
+    public Result<String> createTodoSchedule(TodoScheduleDTO dto) {
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto == null || !StringUtils.hasText(dto.getContent())) {
-            return Result.fail("行程内容不能为空");
-        }
-        if (dto.getStartTime() == null || dto.getFinishTime() == null) {
-            return Result.fail("行程时间不能为空");
+        if (!dto.getStartTime().isBefore(dto.getFinishTime())) {
+            return Result.fail("开始时间必须早于结束时间");
         }
         TodoSchedule schedule = new TodoSchedule();
         schedule.setUserId(userId);
@@ -35,9 +34,12 @@ public class TodoScheduleService {
     }
 
     public Result<String> updateTodoSchedule(TodoScheduleDTO dto) {
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto == null || dto.getId() == null) return Result.fail("缺少行程id");
+        if (dto.getStartTime() != null && dto.getFinishTime() != null && !dto.getStartTime().isBefore(dto.getFinishTime())) {
+            return Result.fail("开始时间必须早于结束时间");
+        }
         TodoSchedule schedule = new TodoSchedule();
         schedule.setId(dto.getId());
         schedule.setUserId(userId);
@@ -51,15 +53,20 @@ public class TodoScheduleService {
         return Result.success("修改成功");
     }
 
-    public Result<String> deleteTodoSchedule(TodoScheduleDTO dto) {
+    public Result<String> deleteTodoSchedule(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto == null || dto.getId() == null) return Result.fail("缺少行程id");
         TodoSchedule schedule = new TodoSchedule();
-        schedule.setId(dto.getId());
+        schedule.setId(id);
         schedule.setUserId(userId);
         int row = todoScheduleMapper.delete(schedule);
         if (row <= 0) return Result.fail("行程不存在或无权限删除");
         return Result.success("删除成功");
+    }
+
+    public Result<List<TodoSchedule>> listTodoSchedule() {
+        Long userId = UserContext.getUserId();
+        if (userId == null) return Result.fail("未登录");
+        return Result.success("查询成功", todoScheduleMapper.listByUserId(userId));
     }
 }

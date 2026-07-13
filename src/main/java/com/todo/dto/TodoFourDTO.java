@@ -1,14 +1,19 @@
 package com.todo.dto;
 
 
+import com.todo.validation.ValidationGroups;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-
-import java.time.LocalDateTime;
 
 @Data
 public class TodoFourDTO {
+        @NotNull(message = "缺少任务id", groups = ValidationGroups.Move.class)
         private Long id;
+
+        @NotNull(message = "重要性不能为空", groups = {ValidationGroups.Move.class, ValidationGroups.Query.class})
         private Integer importance;
+
+        @NotNull(message = "紧急性不能为空", groups = {ValidationGroups.Move.class, ValidationGroups.Query.class})
         private Integer urgency;
     }
 

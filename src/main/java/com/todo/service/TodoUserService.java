@@ -9,7 +9,6 @@ import com.todo.util.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -20,9 +19,7 @@ public class TodoUserService {
     private final TodoScheduleMapper todoScheduleMapper;
 
     public Result<String> register(TodoUserDTO request) {
-        if (request == null || !StringUtils.hasText(request.getUsername()) || !StringUtils.hasText(request.getPassword())) {
-            return Result.fail("用户名和密码不能为空");
-        }
+        if (request == null) return Result.fail("请求参数不能为空");
         String username = request.getUsername().trim();
         if (todoUserMapper.selectByUsername(username) != null) {
             return Result.fail("账号已存在");
@@ -35,9 +32,7 @@ public class TodoUserService {
     }
 
     public Result<String> login(TodoUserDTO request) {
-        if (request == null || !StringUtils.hasText(request.getUsername()) || !StringUtils.hasText(request.getPassword())) {
-            return Result.fail("账号或密码错误");
-        }
+        if (request == null) return Result.fail("请求参数不能为空");
         TodoUser user = todoUserMapper.selectByUsername(request.getUsername().trim());
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             return Result.fail("账号或密码错误");

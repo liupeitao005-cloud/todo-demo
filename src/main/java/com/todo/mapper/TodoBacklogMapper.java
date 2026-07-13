@@ -14,4 +14,8 @@ public interface TodoBacklogMapper {
     int update(TodoBacklog backlog);
     @Select("SELECT id,user_id,title,content,create_time,update_time FROM todo_backlog WHERE id=#{id} AND user_id=#{userId}")
     TodoBacklog selectById(TodoBacklog backlog);
+    @Select("SELECT id,user_id,title,content,create_time,update_time FROM todo_backlog WHERE user_id=#{userId} ORDER BY create_time DESC")
+    java.util.List<TodoBacklog> listByUserId(Long userId);
+    @Delete("DELETE FROM todo_backlog WHERE id=#{id} AND user_id=#{userId}")
+    int delete(TodoBacklog backlog);
 }

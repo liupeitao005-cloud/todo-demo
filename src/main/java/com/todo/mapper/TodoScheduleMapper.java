@@ -5,7 +5,10 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
+
+import java.util.List;
 
 @Mapper
 public interface TodoScheduleMapper {
@@ -18,4 +21,7 @@ public interface TodoScheduleMapper {
 
     @Delete("DELETE FROM todo_schedule WHERE id=#{id} AND user_id=#{userId}")
     int delete(TodoSchedule todoSchedule);
+
+    @Select("SELECT id,user_id,title,content,location,start_time,finish_time,create_time,update_time FROM todo_schedule WHERE user_id=#{userId} ORDER BY start_time ASC, id ASC")
+    List<TodoSchedule> listByUserId(Long userId);
 }

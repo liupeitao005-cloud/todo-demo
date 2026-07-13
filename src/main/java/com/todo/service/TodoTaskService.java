@@ -1,22 +1,16 @@
 package com.todo.service;
 
-import com.todo.dto.TodoBacklogDTO;
-import com.todo.dto.TodoReminderDTO;
-import com.todo.dto.TodoFourDTO;
 import com.todo.dto.TodoTaskDTO;
-import com.todo.entity.TodoBacklog;
-import com.todo.entity.TodoFour;
 import com.todo.entity.TodoTask;
-import com.todo.mapper.TodoBacklogMapper;
-import com.todo.mapper.TodoFourMapper;
 import com.todo.mapper.TodoTaskMapper;
 import com.todo.util.Result;
 import com.todo.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,13 +19,11 @@ public class TodoTaskService{
     private final TodoTaskMapper todoTaskMapper;
 
     public Result<String> createTodoTask(TodoTaskDTO dto) {
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto == null || !StringUtils.hasText(dto.getContent())) {
-            return Result.fail("任务内容不能为空");
-        }
-        if (dto.getStartTime() == null || dto.getFinishTime() == null) {
-            return Result.fail("任务时间不能为空");
+        if (!dto.getStartTime().isBefore(dto.getFinishTime())) {
+            return Result.fail("开始时间必须早于结束时间");
         }
         TodoTask task = new TodoTask();
         task.setUserId(userId);
@@ -45,9 +37,12 @@ public class TodoTaskService{
         return Result.success("创建成功");
     }
     public Result<String> updateTodoTask(TodoTaskDTO dto) {
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto == null || dto.getId() == null) return Result.fail("缺少任务id");
+        if (dto.getStartTime() != null && dto.getFinishTime() != null && !dto.getStartTime().isBefore(dto.getFinishTime())) {
+            return Result.fail("开始时间必须早于结束时间");
+        }
         TodoTask task = new TodoTask();
         task.setId(dto.getId());
         task.setUserId(userId);
@@ -58,10 +53,14 @@ public class TodoTaskService{
         if (row <= 0) return Result.fail("任务不存在或无权限修改");
         return Result.success("修改成功");
     }
+    public Result<List<TodoTask>> listTodoTask() {
+        Long userId = UserContext.getUserId();
+        if (userId == null) return Result.fail("未登录");
+        return Result.success("查询成功", todoTaskMapper.listByUserId(userId));
+    }
     public Result<String> deleteTodoTask(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (id == null) return Result.fail("缺少任务id");
         TodoTask task = new TodoTask();
         task.setId(id);
         task.setUserId(userId);
@@ -72,7 +71,6 @@ public class TodoTaskService{
     public Result<String> finishTodoTask(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (id == null) return Result.fail("缺少任务id");
         TodoTask task = new TodoTask();
         task.setId(id);
         task.setUserId(userId);
@@ -80,10 +78,10 @@ public class TodoTaskService{
         if (row <= 0) return Result.fail("任务不存在或无权限完成");
         return Result.success("完成成功");
     }
+    @Transactional
     public Result<String> qiegehour(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (id == null) return Result.fail("缺少任务id");
         TodoTask task = new TodoTask();
         task.setId(id);
         task.setUserId(userId);
@@ -121,7 +119,6 @@ public class TodoTaskService{
     public Result<String>yanqi(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (id == null) return Result.fail("缺少任务id");
         TodoTask query = new TodoTask();
         query.setId(id);
         query.setUserId(userId);
@@ -147,7 +144,6 @@ public class TodoTaskService{
      public Result<String>nextTodoTask(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (id == null) return  Result.fail("缺少任务id");
         TodoTask task = new TodoTask();
         task.setId(id);
         task.setUserId(userId);

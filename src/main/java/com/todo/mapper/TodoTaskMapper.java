@@ -3,6 +3,8 @@ package com.todo.mapper;
 import com.todo.entity.TodoTask;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 @Mapper
 public interface TodoTaskMapper {
 
@@ -24,6 +26,9 @@ public interface TodoTaskMapper {
 
         @Select("SELECT id,user_id,title,content,task_type,start_time,finish_time,is_finish,create_time,update_time,parent_id FROM todo_task WHERE id = #{id} AND user_id=#{userId}")
         TodoTask selectByID(TodoTask Task);
+
+        @Select("SELECT id,user_id,title,content,task_type,start_time,finish_time,is_finish,is_next,create_time,update_time,parent_id FROM todo_task WHERE user_id=#{userId} ORDER BY COALESCE(start_time, create_time) ASC, id ASC")
+        List<TodoTask> listByUserId(Long userId);
 
         @Update("UPDATE todo_task SET start_time=#{startTime}, finish_time=#{finishTime}, update_time=NOW() WHERE id=#{id} AND user_id=#{userId} AND is_finish=0")
         int yanqi(TodoTask task);

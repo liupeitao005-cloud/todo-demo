@@ -4,7 +4,6 @@
       <div class="login-hero">
         <span class="brand-mark">T</span>
         <h1>Todo 待办与日程管理系统</h1>
-        <p>使用 Vue 框架完成 Web 展示，仍然放在同一个 Spring Boot 项目中。</p>
       </div>
 
       <form class="form-card login-card" @submit.prevent="handleLogin">

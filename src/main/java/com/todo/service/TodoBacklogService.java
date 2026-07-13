@@ -9,7 +9,10 @@ import com.todo.mapper.TodoTaskMapper;
 import com.todo.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.todo.util.Result;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,11 +20,9 @@ public class TodoBacklogService {
     private final TodoBacklogMapper todoBacklogMapper;
     private final TodoTaskMapper todoTaskMapper;
     public Result<String> createtodoBacklog(TodoBacklogDTO dto) {
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto==null||dto.getContent() == null || dto.getContent().equals("")) {
-            return Result.fail("待办内容不能为空");
-        }
         TodoBacklog backlog = new TodoBacklog();
         backlog.setUserId(userId);
         backlog.setContent(dto.getContent());
@@ -29,11 +30,10 @@ public class TodoBacklogService {
         todoBacklogMapper.insert(backlog);
         return Result.success("创建成功");
     }
-
     public Result<String> updateBacklog(TodoBacklogDTO dto) {
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto.getId() == null) return Result.fail("缺少待办id");
         TodoBacklog backlog = new TodoBacklog();
         backlog.setId(dto.getId());
         backlog.setUserId(userId);
@@ -43,12 +43,13 @@ public class TodoBacklogService {
         if (row <= 0) return Result.fail("待办不存在或无权限修改");
         return Result.success("修改成功");
     }
+    @Transactional
     public Result<String>moveTodoBacklog(TodoBacklogDTO dto){
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto.getId() == null) return Result.fail("缺少待办id");
-        if (dto==null||dto.getStartTime() == null || dto.getFinishTime() == null) {
-            return Result.fail("开始时间和结束时间不能为空");
+        if (!dto.getStartTime().isBefore(dto.getFinishTime())) {
+            return Result.fail("开始时间必须早于结束时间");
         }
         TodoBacklog query = new TodoBacklog();
         query.setId(dto.getId());
@@ -63,7 +64,15 @@ public class TodoBacklogService {
         task.setStartTime(dto.getStartTime());
         task.setFinishTime(dto.getFinishTime());
         todoTaskMapper.insert(task);
+        int row = todoBacklogMapper.delete(query);
+        if (row <= 0) return Result.fail("待办删除失败");
         return Result.success("拖拽到日程成功");
+    }
+
+    public Result<List<TodoBacklog>> listBacklog() {
+        Long userId = UserContext.getUserId();
+        if (userId == null) return Result.fail("未登录");
+        return Result.success("查询成功", todoBacklogMapper.listByUserId(userId));
     }
 
 }

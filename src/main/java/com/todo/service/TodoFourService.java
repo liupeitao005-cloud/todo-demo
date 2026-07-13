@@ -11,6 +11,7 @@ import com.todo.util.Result;
 import com.todo.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,12 +21,11 @@ public class TodoFourService {
     private final TodoTaskMapper todoTaskMapper;
     private  final TodoFourMapper todoFourMapper;
 
+    @Transactional
     public Result<String>moveTodoFour(TodoFourDTO dto){
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userID = UserContext.getUserId();
         if(userID == null) return Result.fail("未登录");
-        if(dto == null || dto.getId() == null) {
-            return Result.fail("缺少任务id");
-        }
         TodoTask query = new TodoTask();
         query.setId(dto.getId());
         query.setUserId(userID);
@@ -42,14 +42,12 @@ public class TodoFourService {
         todoFour.setStartTime(task.getStartTime());
         todoFour.setFinishTime(task.getFinishTime());
         todoFourMapper.insert(todoFour);
-        return Result.fail("放入四象限成功");
+        return Result.success("放入四象限成功");
     }
   public Result<List<TodoFour>> listTodoFour(TodoFourDTO dto){
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userID = UserContext.getUserId();
         if (userID == null) return Result.fail("未登录");
-        if(dto == null || dto.getImportance() == null || dto.getUrgency() == null) {
-            return Result.fail("缺少重要性或者紧急性");
-        }
         TodoFour four = new TodoFour();
         four.setUserId(userID);
         four.setImportance(dto.getImportance());

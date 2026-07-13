@@ -21,7 +21,11 @@ public class WebConfig implements WebMvcConfigurer {
                         "/",
                         "/index.html",
                         "/favicon.ico",
-                        "/assets/**"
+                        "/assets/**",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/webjars/**"
                 );
     }
 }

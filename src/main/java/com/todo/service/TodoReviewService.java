@@ -11,6 +11,7 @@ import com.todo.util.Result;
 import com.todo.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -23,74 +24,77 @@ public class TodoReviewService {
     private final TodoReviewplanMapper todoReviewplanMapper;
     private final TodoReminderMapper todoReminderMapper;
 
-
-        public Result<String> createReview(TodoReviewDTO dto) {
-            Long userId = UserContext.getUserId();
-            if (userId == null) return Result.fail("未登录");
-            if (dto == null || dto.getTitle() == null || dto.getContent() == null) {
-                return Result.fail("复习标题和内容不能为空");
-            }
-
-            TodoReview review = new TodoReview();
-            review.setUserId(userId);
-            review.setTitle(dto.getTitle());
-            review.setContent(dto.getContent());
-            todoReviewMapper.insert(review);
-
-            Result<Integer> planResult = createReviewPlans(userId, review.getId(), review.getTitle());
-            if (planResult.getCode() != 200) {
-                return Result.fail(planResult.getMessage());
-            }
-            return Result.success("创建复习任务成功，已生成复习计划和提醒");
-        }
-
-        public Result<Integer> createReviewPlans(Long userId, Long reviewTaskId, String reviewTitle) {
-            if (userId == null) return Result.fail("未登录");
-            if (reviewTaskId == null) return Result.fail("复习任务id不能为空");
-
-            LocalDateTime now = LocalDateTime.now();
-            List<Duration> durations = List.of(
-                    Duration.ofMinutes(20),
-                    Duration.ofDays(1),
-                    Duration.ofDays(2),
-                    Duration.ofDays(4),
-                    Duration.ofDays(7),
-                    Duration.ofDays(15)
-            );
-
-            int count = 0;
-            for (Duration duration : durations) {
-                LocalDateTime reviewTime = now.plus(duration);
-                TodoReviewplan plan = new TodoReviewplan();
-                plan.setUserId(userId);
-                plan.setReviewTaskId(reviewTaskId);
-                plan.setReviewTime(reviewTime);
-                plan.setIsFinish(0);
-                todoReviewplanMapper.insert(plan);
-                TodoReminder reminder = new TodoReminder();
-                reminder.setUserId(userId);
-                reminder.setTargetType("review");
-                reminder.setTargetId(plan.getId());
-                reminder.setTitle("复习提醒");
-                reminder.setContent("该复习了：" + reviewTitle);
-                reminder.setRemindTime(reviewTime);
-                reminder.setChannel("telegramBot"); // 或者 "desktop"
-                todoReminderMapper.insert(reminder);
-                count++;
-            }
-            return Result.success("复习计划生成成功", count);
-        }
-    public Result<String> finishReviewPlan(TodoReviewDTO dto) {
+    @Transactional
+    public Result<String> createReview(TodoReviewDTO dto) {
+        if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-        if (dto == null || dto.getId() == null) return Result.fail("复习计划id不能为空");
 
-        int row = todoReviewplanMapper.finish(dto.getId(), userId);
+        TodoReview review = new TodoReview();
+        review.setUserId(userId);
+        review.setTitle(dto.getTitle());
+        review.setContent(dto.getContent());
+        todoReviewMapper.insert(review);
+
+        Result<Integer> planResult = createReviewPlans(userId, review.getId(), review.getTitle());
+        if (planResult.getCode() != 200) {
+            return Result.fail(planResult.getMessage());
+        }
+        return Result.success("创建复习任务成功，已生成复习计划和提醒");
+    }
+
+    @Transactional
+    public Result<Integer> createReviewPlans(Long userId, Long reviewTaskId, String reviewTitle) {
+        if (userId == null) return Result.fail("未登录");
+        if (reviewTaskId == null) return Result.fail("复习任务id不能为空");
+
+        LocalDateTime now = LocalDateTime.now();
+        List<Duration> durations = List.of(
+                Duration.ofMinutes(20),
+                Duration.ofDays(1),
+                Duration.ofDays(2),
+                Duration.ofDays(4),
+                Duration.ofDays(7),
+                Duration.ofDays(15)
+        );
+
+        int count = 0;
+        for (Duration duration : durations) {
+            LocalDateTime reviewTime = now.plus(duration);
+            TodoReviewplan plan = new TodoReviewplan();
+            plan.setUserId(userId);
+            plan.setReviewTaskId(reviewTaskId);
+            plan.setReviewTime(reviewTime);
+            plan.setIsFinish(0);
+            todoReviewplanMapper.insert(plan);
+
+            TodoReminder reminder = new TodoReminder();
+            reminder.setUserId(userId);
+            reminder.setTargetType("review");
+            reminder.setTargetId(plan.getId());
+            reminder.setTitle("复习提醒");
+            reminder.setContent("该复习了：" + reviewTitle);
+            reminder.setRemindTime(reviewTime);
+            reminder.setChannel("telegramBot");
+            todoReminderMapper.insert(reminder);
+            count++;
+        }
+        return Result.success("复习计划生成成功", count);
+    }
+
+    public Result<String> finishReviewPlan(Long id) {
+        Long userId = UserContext.getUserId();
+        if (userId == null) return Result.fail("未登录");
+        int row = todoReviewplanMapper.finish(id, userId);
         if (row <= 0) {
             return Result.fail("复习计划不存在或无权限");
         }
-
         return Result.success("复习完成记录成功");
     }
-    }
 
+    public Result<List<TodoReviewplan>> listReviewPlan() {
+        Long userId = UserContext.getUserId();
+        if (userId == null) return Result.fail("未登录");
+        return Result.success("查询成功", todoReviewplanMapper.listByUserId(userId));
+    }
+}
