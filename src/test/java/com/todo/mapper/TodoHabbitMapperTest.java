@@ -24,8 +24,8 @@ public class TodoHabbitMapperTest extends MapperTestBase {
     private TodoHabbit newHabbit(Long userId) {
         TodoHabbit habbit = new TodoHabbit();
         habbit.setUserId(userId);
-        habbit.setTitle("test habbit");
-        habbit.setContent("test content");
+        habbit.setTitle("测试标题");
+        habbit.setContent("测试内容");
         habbit.setDayMinutes(30);
         habbit.setMinMinutes(10);
         habbit.setMaxMinutes(60);

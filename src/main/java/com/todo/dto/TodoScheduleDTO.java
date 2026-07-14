@@ -9,18 +9,20 @@ import java.time.LocalDateTime;
 
 @Data
 public class TodoScheduleDTO {
-    @NotNull(message = "缺少行程id", groups = {ValidationGroups.Update.class, ValidationGroups.IdRequired.class})
+    @NotNull(message = "日程ID不能为空", groups = {ValidationGroups.Update.class, ValidationGroups.IdRequired.class})
     private Long id;
+
+    @NotBlank(message = "日程标题不能为空", groups = {ValidationGroups.Create.class, ValidationGroups.Update.class})
     private String title;
 
-    @NotBlank(message = "行程内容不能为空", groups = ValidationGroups.Create.class)
+    @NotBlank(message = "日程内容不能为空", groups = {ValidationGroups.Create.class, ValidationGroups.Update.class})
     private String content;
+
     private String location;
 
-    @NotNull(message = "行程开始时间不能为空", groups = ValidationGroups.Create.class)
+    @NotNull(message = "日程开始时间不能为空", groups = ValidationGroups.Create.class)
     private LocalDateTime startTime;
 
-    @NotNull(message = "行程结束时间不能为空", groups = ValidationGroups.Create.class)
+    @NotNull(message = "日程结束时间不能为空", groups = ValidationGroups.Create.class)
     private LocalDateTime finishTime;
-
 }

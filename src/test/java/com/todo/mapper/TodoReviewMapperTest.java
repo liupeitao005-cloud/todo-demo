@@ -24,8 +24,8 @@ public class TodoReviewMapperTest extends MapperTestBase {
     private TodoReview newReview(Long userId) {
         TodoReview review = new TodoReview();
         review.setUserId(userId);
-        review.setTitle("test review");
-        review.setContent("test content");
+        review.setTitle("测试标题");
+        review.setContent("测试内容");
         return review;
     }
 }

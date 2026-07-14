@@ -43,9 +43,9 @@ public class TodoCalendarMapperTest extends MapperTestBase {
     private TodoSchedule newSchedule(Long userId) {
         TodoSchedule schedule = new TodoSchedule();
         schedule.setUserId(userId);
-        schedule.setTitle("test schedule");
-        schedule.setContent("test content");
-        schedule.setLocation("test location");
+        schedule.setTitle("测试标题");
+        schedule.setContent("测试内容");
+        schedule.setLocation("测试地点");
         schedule.setStartTime(LocalDateTime.now());
         schedule.setFinishTime(LocalDateTime.now().plusHours(1));
         return schedule;
@@ -54,8 +54,8 @@ public class TodoCalendarMapperTest extends MapperTestBase {
     private TodoTask newTask(Long userId) {
         TodoTask task = new TodoTask();
         task.setUserId(userId);
-        task.setTitle("test task");
-        task.setContent("test content");
+        task.setTitle("测试标题");
+        task.setContent("测试内容");
         task.setTaskType("task");
         task.setParentId(0L);
         task.setStartTime(LocalDateTime.now());

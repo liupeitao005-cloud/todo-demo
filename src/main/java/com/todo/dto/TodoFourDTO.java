@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class TodoFourDTO {
-    @NotNull(message = "缺少任务id", groups = {ValidationGroups.Move.class, ValidationGroups.IdRequired.class})
+    @NotNull(message = "任务ID不能为空", groups = {ValidationGroups.Move.class, ValidationGroups.IdRequired.class})
     private Long id;
 
     @NotNull(message = "重要性不能为空", groups = {ValidationGroups.Move.class, ValidationGroups.Query.class})

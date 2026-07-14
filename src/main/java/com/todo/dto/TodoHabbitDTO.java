@@ -10,7 +10,10 @@ public class TodoHabbitDTO {
 
     @NotBlank(message = "习惯标题不能为空", groups = ValidationGroups.Create.class)
     private String title;
+
+    @NotBlank(message = "习惯内容不能为空", groups = ValidationGroups.Create.class)
     private String content;
+
     private Integer dayMinutes;
     private Integer minMinutes;
     private Integer maxMinutes;

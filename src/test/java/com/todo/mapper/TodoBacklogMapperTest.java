@@ -37,8 +37,8 @@ public class TodoBacklogMapperTest extends MapperTestBase {
         assertNotNull(result);
         assertEquals(backlog.getId(), result.getId());
         assertEquals(userId, result.getUserId());
-        assertEquals("test backlog", result.getTitle());
-        assertEquals("test content", result.getContent());
+        assertEquals("测试标题", result.getTitle());
+        assertEquals("测试内容", result.getContent());
     }
 
     @Test
@@ -46,8 +46,8 @@ public class TodoBacklogMapperTest extends MapperTestBase {
         Long userId = createUser();
         TodoBacklog backlog = newBacklog(userId);
         todoBacklogMapper.insert(backlog);
-        backlog.setTitle("update backlog");
-        backlog.setContent("update content");
+        backlog.setTitle("测试标题");
+        backlog.setContent("测试内容");
         int row = todoBacklogMapper.update(backlog);
         assertEquals(1, row);
     }
@@ -56,8 +56,8 @@ public class TodoBacklogMapperTest extends MapperTestBase {
     private TodoBacklog newBacklog(Long userId) {
         TodoBacklog backlog = new TodoBacklog();
         backlog.setUserId(userId);
-        backlog.setTitle("test backlog");
-        backlog.setContent("test content");
+        backlog.setTitle("测试标题");
+        backlog.setContent("测试内容");
         return backlog;
     }
 }

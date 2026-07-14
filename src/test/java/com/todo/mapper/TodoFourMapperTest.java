@@ -38,15 +38,15 @@ public class TodoFourMapperTest extends MapperTestBase {
         assertFalse(result.isEmpty());
         assertEquals(four.getId(), result.get(0).getId());
         assertEquals(userId, result.get(0).getUserId());
-        assertEquals("test four", result.get(0).getTitle());
-        assertEquals("test content", result.get(0).getContent());
+        assertEquals("测试标题", result.get(0).getTitle());
+        assertEquals("测试内容", result.get(0).getContent());
     }
 
     private TodoFour newFour(Long userId) {
         TodoFour four = new TodoFour();
         four.setUserId(userId);
-        four.setTitle("test four");
-        four.setContent("test content");
+        four.setTitle("测试标题");
+        four.setContent("测试内容");
         four.setImportance(1);
         four.setUrgency(1);
         four.setStartTime(LocalDateTime.now());

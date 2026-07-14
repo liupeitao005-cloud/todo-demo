@@ -55,8 +55,8 @@ public class TodoReminderMapperTest extends MapperTestBase {
         reminder.setUserId(userId);
         reminder.setTargetType("task");
         reminder.setTargetId(1L);
-        reminder.setTitle("test reminder");
-        reminder.setContent("test content");
+        reminder.setTitle("测试标题");
+        reminder.setContent("测试内容");
         reminder.setRemindTime(LocalDateTime.now().minusMinutes(1));
         reminder.setChannel("desktop");
         return reminder;
