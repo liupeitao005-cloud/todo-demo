@@ -30,24 +30,39 @@
 
       <div class="list">
         <article v-for="item in items" :key="item.itemType + '-' + item.id" class="schedule-item">
+          <div class="schedule-head">
+            <span class="tag">{{ item.itemType === "task" ? "任务" : "行程" }}</span>
+            <small class="muted">#{{ item.id }}</small>
+          </div>
           <strong>{{ item.title || "未命名" }}</strong>
+          <p v-if="item.content" class="calendar-content">{{ item.content }}</p>
+          <p v-if="item.location" class="muted">地点：{{ item.location }}</p>
           <span class="muted">{{ formatDate(item.startTime) }} - {{ formatDate(item.finishTime) }}</span>
-          <span class="tag">{{ item.itemType === "task" ? "任务" : "行程" }}</span>
         </article>
         <p v-if="!items.length" class="empty">暂无日程数据。</p>
       </div>
     </div>
-    <ResultPanel :result="result" />
+    <aside class="result-panel">
+      <h2>当前日程明细</h2>
+      <div v-if="items.length" class="list">
+        <article v-for="item in items" :key="'detail-' + item.itemType + '-' + item.id" class="schedule-item">
+          <strong>{{ item.title || "未命名" }}</strong>
+          <span>{{ item.content || "无内容" }}</span>
+          <span v-if="item.location" class="muted">地点：{{ item.location }}</span>
+          <small class="muted">{{ item.itemType === "task" ? "任务" : "行程" }} #{{ item.id }}</small>
+        </article>
+      </div>
+      <p v-else class="empty">查询后这里会显示标题、内容、地点和编号。</p>
+    </aside>
   </section>
 </template>
 
 <script setup>
 import { computed, ref } from "vue";
-import ResultPanel from "@/components/ResultPanel.vue";
 import { calendarApi } from "@/api/todoApi";
 import { useRequest } from "@/composables/useRequest";
 
-const { loading, status, ok, result, run } = useRequest();
+const { loading, status, ok, run } = useRequest();
 const mode = ref("day");
 const point = ref("");
 const customStart = ref("");
@@ -112,7 +127,11 @@ function getRange() {
 
 async function load() {
   const params = getRange();
-  if (!params.startTime || !params.finishTime) return (status.value = "请选择开始和结束时间"), (ok.value = false);
+  if (!params.startTime || !params.finishTime) {
+    status.value = "请选择开始和结束时间";
+    ok.value = false;
+    return;
+  }
   rangeText.value = `${params.startTime.replace("T", " ")} 至 ${params.finishTime.replace("T", " ")}`;
   const data = await run(() => calendarApi.list(params));
   items.value = Array.isArray(data?.data) ? data.data : [];

@@ -28,32 +28,77 @@
         <button :disabled="loading" type="submit">创建提醒</button>
         <button class="secondary" type="button" @click="requestNotify">开启通知权限</button>
         <button class="secondary" type="button" @click="check">检查到期提醒</button>
+        <button class="secondary" type="button" @click="loadList">刷新列表</button>
       </div>
       <p :class="['status', ok ? 'ok' : 'err']">{{ status }}</p>
     </form>
-    <ResultPanel :result="result" />
+
+    <aside class="result-panel">
+      <h2>提醒列表</h2>
+      <div v-if="items.length" class="list">
+        <button v-for="item in items" :key="item.id" class="list-item" type="button" @click="pick(item)">
+          <strong>#{{ item.id }} {{ item.title }}</strong>
+          <span>{{ item.targetType }} #{{ item.targetId }} · {{ item.channel }}</span>
+          <small>{{ formatTime(item.remindTime) }}</small>
+          <span class="tag">{{ item.isSent ? "已提醒" : "未提醒" }}</span>
+        </button>
+      </div>
+      <p v-else class="empty">暂无提醒，创建后会自动显示在这里。</p>
+    </aside>
   </section>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, reactive } from "vue";
-import ResultPanel from "@/components/ResultPanel.vue";
+import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { reminderApi } from "@/api/todoApi";
 import { useRequest } from "@/composables/useRequest";
 
 const POLL_INTERVAL_MS = 60000;
 const form = reactive({ targetType: "task", targetId: null, title: "", content: "", remindTime: "", channel: "desktop" });
+const items = ref([]);
 const notifiedIds = new Set();
-const { loading, status, ok, result, run } = useRequest();
+const { loading, status, ok, run } = useRequest();
 let pollingTimer = null;
 let checking = false;
 
-function create() {
-  if (!form.targetId || !form.title || !form.remindTime) return (status.value = "请填写对象 ID、标题和提醒时间"), (ok.value = false);
-  run(() => reminderApi.create({ ...form }));
+function formatTime(value) {
+  return value ? String(value).replace("T", " ") : "";
 }
+
+function pick(item) {
+  form.targetType = item.targetType || "task";
+  form.targetId = item.targetId || null;
+  form.title = item.title || "";
+  form.content = item.content || "";
+  form.remindTime = item.remindTime || "";
+  form.channel = item.channel || "desktop";
+}
+
+async function loadList(options = {}) {
+  const data = options.silent ? await reminderApi.list() : await run(() => reminderApi.list(), "列表已刷新");
+  items.value = Array.isArray(data?.data) ? data.data : [];
+}
+
+async function create() {
+  if (!form.targetId || !form.title || !form.remindTime) {
+    status.value = "请填写对象 ID、标题和提醒时间";
+    ok.value = false;
+    return;
+  }
+  const data = await run(() => reminderApi.create({ ...form }));
+  if (data?.code === 200) {
+    await loadList({ silent: true });
+    status.value = "创建提醒成功";
+    ok.value = true;
+  }
+}
+
 async function requestNotify() {
-  if (!("Notification" in window)) return (status.value = "当前浏览器不支持桌面通知"), (ok.value = false);
+  if (!("Notification" in window)) {
+    status.value = "当前浏览器不支持桌面通知";
+    ok.value = false;
+    return;
+  }
   const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
   ok.value = permission === "granted";
   status.value = ok.value ? "桌面通知已开启" : "未获得桌面通知权限";
@@ -97,18 +142,21 @@ async function check(options = {}) {
     await reminderApi.read(reminder.id);
     handledCount++;
   }
-  status.value = handledCount ? `已处理 ${handledCount} 条提醒` : "暂无新的到期提醒";
+  const operationMessage = handledCount ? `已处理 ${handledCount} 条提醒` : "暂无新的到期提醒";
+  status.value = operationMessage;
+  ok.value = true;
+  await loadList({ silent: true });
+  status.value = operationMessage;
   ok.value = true;
 }
 
 onMounted(() => {
-  check();
+  loadList({ silent: true });
+  check({ silent: true });
   pollingTimer = window.setInterval(() => check({ silent: true }), POLL_INTERVAL_MS);
 });
 
 onUnmounted(() => {
-  if (pollingTimer) {
-    window.clearInterval(pollingTimer);
-  }
+  if (pollingTimer) window.clearInterval(pollingTimer);
 });
 </script>

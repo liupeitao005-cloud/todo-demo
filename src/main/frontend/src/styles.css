@@ -224,6 +224,30 @@ nav a.router-link-active {
   font-size: 12px;
 }
 .list { display: grid; gap: 10px; }
+.list-item {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-height: 0;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: var(--text);
+  background: #fff;
+  text-align: left;
+}
+.list-item:hover {
+  border-color: #bfdbfe;
+  background: #f8fafc;
+}
+.list-item strong,
+.list-item span,
+.list-item small {
+  overflow-wrap: anywhere;
+}
+.list-item small {
+  color: var(--muted);
+}
 .schedule-item {
   display: grid;
   gap: 4px;
@@ -231,6 +255,16 @@ nav a.router-link-active {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
+}
+.schedule-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+.calendar-content {
+  color: #344054;
+  overflow-wrap: anywhere;
 }
 .tag {
   justify-self: start;

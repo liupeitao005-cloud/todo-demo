@@ -2,6 +2,7 @@ package com.todo.mapper;
 
 
 import com.todo.entity.TodoFour;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -17,4 +18,7 @@ public interface TodoFourMapper {
     int insert(TodoFour todoFour);
     @Select("SELECT id,user_id,title,content,importance,urgency,start_time,finish_time,create_time,update_time FROM todo_four WHERE user_id=#{userId} AND importance=#{importance} AND urgency=#{urgency}")
     List<TodoFour> selectByFour (TodoFour todoFour);
+
+    @Delete("DELETE FROM todo_four WHERE id=#{id} AND user_id=#{userId}")
+    int delete(TodoFour todoFour);
 }

@@ -15,23 +15,66 @@
       <div class="actions">
         <button :disabled="loading" type="submit">创建行程</button>
         <button class="secondary" type="button" @click="update">修改行程</button>
+        <button class="secondary" type="button" @click="loadList">刷新列表</button>
         <button class="danger" type="button" @click="remove">删除行程</button>
       </div>
       <p :class="['status', ok ? 'ok' : 'err']">{{ status }}</p>
     </form>
-    <ResultPanel :result="result" />
+
+    <aside class="result-panel">
+      <h2>行程列表</h2>
+      <div v-if="items.length" class="list">
+        <button v-for="item in items" :key="item.id" class="list-item" type="button" @click="pick(item)">
+          <strong>#{{ item.id }} {{ item.title }}</strong>
+          <span>{{ item.location || "无地点" }}</span>
+          <small>
+            {{ formatTime(item.startTime) || "未安排开始时间" }}
+            <template v-if="item.finishTime"> - {{ formatTime(item.finishTime) }}</template>
+          </small>
+        </button>
+      </div>
+      <p v-else class="empty">暂无行程，创建后会自动显示在这里。</p>
+    </aside>
   </section>
 </template>
 
 <script setup>
-import { reactive } from "vue";
-import ResultPanel from "@/components/ResultPanel.vue";
+import { onMounted, reactive, ref } from "vue";
 import { scheduleApi } from "@/api/todoApi";
 import { useRequest } from "@/composables/useRequest";
 
 const form = reactive({ id: null, title: "", content: "", location: "", startTime: "", finishTime: "" });
-const { loading, status, ok, result, run } = useRequest();
+const items = ref([]);
+const { loading, status, ok, run } = useRequest();
 const payload = () => ({ ...form });
+
+function formatTime(value) {
+  return value ? String(value).replace("T", " ") : "";
+}
+
+function pick(item) {
+  form.id = item.id;
+  form.title = item.title || "";
+  form.content = item.content || "";
+  form.location = item.location || "";
+  form.startTime = item.startTime || "";
+  form.finishTime = item.finishTime || "";
+}
+
+async function loadList(options = {}) {
+  const data = options.silent ? await scheduleApi.list() : await run(() => scheduleApi.list(), "列表已刷新");
+  items.value = Array.isArray(data?.data) ? data.data : [];
+}
+
+async function mutate(action, successMessage) {
+  const data = await run(action);
+  if (data?.code === 200) {
+    const operationMessage = successMessage || data?.message || "操作成功";
+    await loadList({ silent: true });
+    status.value = operationMessage;
+    ok.value = true;
+  }
+}
 
 function needId() {
   if (form.id) return true;
@@ -39,10 +82,18 @@ function needId() {
   ok.value = false;
   return false;
 }
+
 function create() {
-  if (!form.title) return (status.value = "请填写标题"), (ok.value = false);
-  run(() => scheduleApi.create(payload()));
+  if (!form.title) {
+    status.value = "请填写标题";
+    ok.value = false;
+    return;
+  }
+  mutate(() => scheduleApi.create(payload()), "创建成功");
 }
-function update() { if (needId()) run(() => scheduleApi.update(payload())); }
-function remove() { if (needId()) run(() => scheduleApi.remove(form.id)); }
+
+function update() { if (needId()) mutate(() => scheduleApi.update(payload()), "修改成功"); }
+function remove() { if (needId()) mutate(() => scheduleApi.remove(form.id), "删除成功"); }
+
+onMounted(() => loadList({ silent: true }));
 </script>

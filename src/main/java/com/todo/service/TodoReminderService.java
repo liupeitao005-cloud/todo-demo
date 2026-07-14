@@ -50,6 +50,12 @@ public class TodoReminderService {
         return pendingReminderByChannel("telegramBot");
     }
 
+    public Result<List<TodoReminder>> listReminder() {
+        Long userId = UserContext.getUserId();
+        if (userId == null) return Result.fail("未登录");
+        return Result.success("查询成功", todoReminderMapper.selectByUserId(userId));
+    }
+
     private Result<List<TodoReminderVO>> pendingReminderByChannel(String channel) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
