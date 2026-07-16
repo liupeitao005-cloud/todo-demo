@@ -20,6 +20,12 @@ public class TodoUserService {
 
     public Result<String> register(TodoUserDTO request) {
         if (request == null) return Result.fail("请求参数不能为空");
+        if (request.getConfirmPassword() == null || request.getConfirmPassword().isBlank()) {
+            return Result.fail("确认密码不能为空");
+        }
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            return Result.fail("两次密码不一致");
+        }
         String username = request.getUsername().trim();
         if (todoUserMapper.selectByUsername(username) != null) {
             return Result.fail("账号已存在");

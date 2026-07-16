@@ -1,12 +1,8 @@
 package com.todo.service;
 
 import com.todo.dto.TodoReviewDTO;
-import com.todo.dto.TodoTaskDTO;
-import com.todo.entity.TodoReminder;
 import com.todo.entity.TodoReview;
 import com.todo.entity.TodoReviewplan;
-import com.todo.entity.TodoTask;
-import com.todo.mapper.TodoReminderMapper;
 import com.todo.mapper.TodoReviewMapper;
 import com.todo.mapper.TodoReviewplanMapper;
 import com.todo.util.Result;
@@ -28,8 +24,6 @@ class TodoReviewServiceTest {
     private  TodoReviewMapper todoReviewMapper;
     @Mock
     private  TodoReviewplanMapper todoReviewplanMapper;
-    @Mock
-    private  TodoReminderMapper todoReminderMapper;
     @InjectMocks
     private TodoReviewService todoReviewService;
     @AfterEach
@@ -44,7 +38,6 @@ class TodoReviewServiceTest {
         assertEquals("未登录", result.getMessage());
         verify(todoReviewMapper, never()).insert(any(TodoReview.class));
         verify(todoReviewplanMapper, never()).insert(any(TodoReviewplan.class));
-        verify(todoReminderMapper, never()).insert(any(TodoReminder.class));
     }
     @Test
     void createReviewSuccess() {
@@ -58,13 +51,11 @@ class TodoReviewServiceTest {
             return 1;
         });
         when(todoReviewplanMapper.insert(any(TodoReviewplan.class))).thenReturn(1);
-        when(todoReminderMapper.insert(any(TodoReminder.class))).thenReturn(1);
         Result<String> result = todoReviewService.createReview(dto);
         assertEquals(200, result.getCode());
-        assertEquals("创建复习任务成功，已生成复习计划和提醒", result.getMessage());
+        assertEquals("创建复习任务成功，已生成复习计划", result.getMessage());
         verify(todoReviewMapper).insert(any(TodoReview.class));
         verify(todoReviewplanMapper, times(6)).insert(any(TodoReviewplan.class));
-        verify(todoReminderMapper, times(6)).insert(any(TodoReminder.class));
     }
     @Test
     void finishReviewPlanFailWhenNotLogin() {
@@ -91,4 +82,5 @@ class TodoReviewServiceTest {
         assertEquals("复习完成记录成功", result.getMessage());
         verify(todoReviewplanMapper).finish(anyLong(),anyLong());
     }
+
 }

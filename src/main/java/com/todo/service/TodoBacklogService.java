@@ -75,4 +75,16 @@ public class TodoBacklogService {
         return Result.success("查询成功", todoBacklogMapper.listByUserId(userId));
     }
 
+    public Result<String> deleteBacklog(Long id) {
+        Long userId = UserContext.getUserId();
+        if (userId == null) return Result.fail("未登录");
+        if (id == null) return Result.fail("待办ID不能为空");
+        TodoBacklog backlog = new TodoBacklog();
+        backlog.setId(id);
+        backlog.setUserId(userId);
+        int row = todoBacklogMapper.delete(backlog);
+        if (row <= 0) return Result.fail("待办不存在或无权限删除");
+        return Result.success("删除成功");
+    }
+
 }

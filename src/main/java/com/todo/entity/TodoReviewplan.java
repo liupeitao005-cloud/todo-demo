@@ -10,6 +10,8 @@ public class TodoReviewplan {
     private Long id;
     private Long userId;
     private Long reviewTaskId;
+    private String title;
+    private String content;
     private LocalDateTime reviewTime;
     private Integer isFinish;
     private LocalDateTime finishTime;

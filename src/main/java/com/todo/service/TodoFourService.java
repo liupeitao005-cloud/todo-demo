@@ -30,7 +30,7 @@ public class TodoFourService {
         query.setUserId(userId);
         TodoTask task = todoTaskMapper.selectByID(query);
         if (task == null) {
-            return Result.fail("任务不存在或无权操作");
+            return Result.fail("任务不存在或无权限操作");
         }
 
         TodoFour todoFour = new TodoFour();
@@ -41,7 +41,10 @@ public class TodoFourService {
         todoFour.setUrgency(dto.getUrgency());
         todoFour.setStartTime(task.getStartTime());
         todoFour.setFinishTime(task.getFinishTime());
-        todoFourMapper.insert(todoFour);
+        int updated = todoFourMapper.updateQuadrantBySnapshot(todoFour);
+        if (updated <= 0) {
+            todoFourMapper.insert(todoFour);
+        }
         return Result.success("放入四象限成功");
     }
 

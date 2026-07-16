@@ -19,6 +19,6 @@ public interface TodoReviewplanMapper {
     int insert(TodoReviewplan todoReviewplan);
     @Update("UPDATE todo_reviewplan SET is_finish = 1, finish_time = NOW(), update_time = NOW() WHERE id = #{id} AND user_id = #{userId}")
     int finish(@Param("id") Long id, @Param("userId") Long userId);
-    @Select("SELECT id,user_id,review_task_id,review_time,is_finish,finish_time,create_time,update_time FROM todo_reviewplan WHERE user_id=#{userId} ORDER BY review_time ASC")
+    @Select("SELECT id,user_id,review_task_id,(SELECT title FROM todo_review_task WHERE id=review_task_id AND user_id=#{userId}) AS title,(SELECT content FROM todo_review_task WHERE id=review_task_id AND user_id=#{userId}) AS content,review_time,is_finish,finish_time,create_time,update_time FROM todo_reviewplan WHERE user_id=#{userId} AND review_task_id IN (SELECT id FROM todo_review_task WHERE user_id=#{userId}) ORDER BY review_time ASC")
     List<TodoReviewplan> listByUserId(Long userId);
 }

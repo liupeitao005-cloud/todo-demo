@@ -93,7 +93,6 @@ public class TodoReminderService {
         }
         return processedCount;
     }
-
     private boolean isClientDeliveredChannel(String channel) {
         return "desktop".equals(channel) || "app".equals(channel);
     }

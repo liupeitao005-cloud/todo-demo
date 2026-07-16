@@ -1,10 +1,8 @@
 package com.todo.service;
 
 import com.todo.dto.TodoReviewDTO;
-import com.todo.entity.TodoReminder;
 import com.todo.entity.TodoReview;
 import com.todo.entity.TodoReviewplan;
-import com.todo.mapper.TodoReminderMapper;
 import com.todo.mapper.TodoReviewMapper;
 import com.todo.mapper.TodoReviewplanMapper;
 import com.todo.util.Result;
@@ -22,7 +20,6 @@ import java.util.List;
 public class TodoReviewService {
     private final TodoReviewMapper todoReviewMapper;
     private final TodoReviewplanMapper todoReviewplanMapper;
-    private final TodoReminderMapper todoReminderMapper;
 
     @Transactional
     public Result<String> createReview(TodoReviewDTO dto) {
@@ -33,18 +30,18 @@ public class TodoReviewService {
         TodoReview review = new TodoReview();
         review.setUserId(userId);
         review.setTitle(dto.getTitle());
-        review.setContent(dto.getContent());
+        review.setContent(dto.getContent() == null || dto.getContent().isBlank() ? dto.getTitle() : dto.getContent());
         todoReviewMapper.insert(review);
 
-        Result<Integer> planResult = createReviewPlans(userId, review.getId(), review.getTitle());
+        Result<Integer> planResult = createReviewPlans(userId, review.getId());
         if (planResult.getCode() != 200) {
             return Result.fail(planResult.getMessage());
         }
-        return Result.success("创建复习任务成功，已生成复习计划和提醒");
+        return Result.success("创建复习任务成功，已生成复习计划");
     }
 
     @Transactional
-    public Result<Integer> createReviewPlans(Long userId, Long reviewTaskId, String reviewTitle) {
+    public Result<Integer> createReviewPlans(Long userId, Long reviewTaskId) {
         if (userId == null) return Result.fail("未登录");
         if (reviewTaskId == null) return Result.fail("复习任务id不能为空");
 
@@ -67,16 +64,6 @@ public class TodoReviewService {
             plan.setReviewTime(reviewTime);
             plan.setIsFinish(0);
             todoReviewplanMapper.insert(plan);
-
-            TodoReminder reminder = new TodoReminder();
-            reminder.setUserId(userId);
-            reminder.setTargetType("review");
-            reminder.setTargetId(plan.getId());
-            reminder.setTitle("复习提醒");
-            reminder.setContent("该复习了：" + reviewTitle);
-            reminder.setRemindTime(reviewTime);
-            reminder.setChannel("telegramBot");
-            todoReminderMapper.insert(reminder);
             count++;
         }
         return Result.success("复习计划生成成功", count);

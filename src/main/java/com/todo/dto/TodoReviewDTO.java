@@ -13,6 +13,5 @@ public class TodoReviewDTO {
     @NotBlank(message = "复习标题不能为空", groups = ValidationGroups.Create.class)
     private String title;
 
-    @NotBlank(message = "复习内容不能为空", groups = ValidationGroups.Create.class)
     private String content;
 }

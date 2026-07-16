@@ -70,13 +70,39 @@ class TodoFourServiceTest {
         task.setContent("测试内容");
         task.setStartTime(LocalDateTime.now());
         task.setFinishTime(LocalDateTime.now().plusHours(2));
+        when(todoFourMapper.updateQuadrantBySnapshot(any(TodoFour.class))).thenReturn(0);
         when(todoFourMapper.insert(any(TodoFour.class))).thenReturn(1);
         when(todoTaskMapper.selectByID(any(TodoTask.class))).thenReturn(task);
         Result<String> result = todoFourService.moveTodoFour(dto);
         assertEquals(200, result.getCode());
         assertEquals("放入四象限成功",result.getMessage());
         verify(todoTaskMapper).selectByID(any(TodoTask.class));
+        verify(todoFourMapper).updateQuadrantBySnapshot(any(TodoFour.class));
         verify(todoFourMapper).insert(any(TodoFour.class));
+    }
+
+    @Test
+    void moveTodoFourUpdatesExistingTaskSnapshot(){
+        UserContext.setUserId(1L);
+        TodoFourDTO dto = new TodoFourDTO();
+        dto.setId(1L);
+        dto.setImportance(0);
+        dto.setUrgency(1);
+        TodoTask task = new TodoTask();
+        task.setId(1L);
+        task.setTitle("测试任务");
+        task.setContent("测试内容");
+        task.setStartTime(LocalDateTime.now());
+        task.setFinishTime(LocalDateTime.now().plusHours(2));
+        when(todoTaskMapper.selectByID(any(TodoTask.class))).thenReturn(task);
+        when(todoFourMapper.updateQuadrantBySnapshot(any(TodoFour.class))).thenReturn(1);
+
+        Result<String> result = todoFourService.moveTodoFour(dto);
+
+        assertEquals(200, result.getCode());
+        assertEquals("放入四象限成功", result.getMessage());
+        verify(todoFourMapper).updateQuadrantBySnapshot(any(TodoFour.class));
+        verify(todoFourMapper, never()).insert(any(TodoFour.class));
     }
     @Test
     void selectTodoFourFailWhenNotLogin(){

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,6 +34,19 @@ public class TodoReviewplanMapperTest extends MapperTestBase {
         todoReviewplanMapper.insert(reviewplan);
         int row = todoReviewplanMapper.finish(reviewplan.getId(), userId);
         assertEquals(1, row);
+    }
+
+    @Test
+    void listByUserIdIncludesReviewTaskTitleAndContent() {
+        Long userId = createUser();
+        TodoReviewplan reviewplan = newReviewplan(userId);
+        todoReviewplanMapper.insert(reviewplan);
+
+        List<TodoReviewplan> plans = todoReviewplanMapper.listByUserId(userId);
+
+        assertEquals(1, plans.size());
+        assertEquals("测试标题", plans.get(0).getTitle());
+        assertEquals("测试内容", plans.get(0).getContent());
     }
 
     private TodoReviewplan newReviewplan(Long userId) {

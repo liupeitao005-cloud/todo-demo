@@ -44,6 +44,7 @@ class TodoUserServiceTest {
         TodoUserDTO dto = new TodoUserDTO();
         dto.setUsername("demo");
         dto.setPassword("123456");
+        dto.setConfirmPassword("123456");
         when(todoUserMapper.selectByUsername("demo")).thenReturn(null);
         when(passwordEncoder.encode("123456")).thenReturn("encoded-password");
         Result<String> result = todoUserService.register(dto);
@@ -56,10 +57,37 @@ class TodoUserServiceTest {
     }
 
     @Test
+    void registerFailWhenConfirmPasswordBlank() {
+        TodoUserDTO dto = new TodoUserDTO();
+        dto.setUsername("demo");
+        dto.setPassword("123456");
+        dto.setConfirmPassword("");
+        Result<String> result = todoUserService.register(dto);
+        assertEquals(400, result.getCode());
+        assertEquals("确认密码不能为空", result.getMessage());
+        verify(todoUserMapper, never()).selectByUsername(any());
+        verify(todoUserMapper, never()).insert(any(TodoUser.class));
+    }
+
+    @Test
+    void registerFailWhenPasswordNotSame() {
+        TodoUserDTO dto = new TodoUserDTO();
+        dto.setUsername("demo");
+        dto.setPassword("123456");
+        dto.setConfirmPassword("654321");
+        Result<String> result = todoUserService.register(dto);
+        assertEquals(400, result.getCode());
+        assertEquals("两次密码不一致", result.getMessage());
+        verify(todoUserMapper, never()).selectByUsername(any());
+        verify(todoUserMapper, never()).insert(any(TodoUser.class));
+    }
+
+    @Test
     void registerFailWhenUsernameExists() {
         TodoUserDTO dto = new TodoUserDTO();
         dto.setUsername("demo");
         dto.setPassword("123456");
+        dto.setConfirmPassword("123456");
         when(todoUserMapper.selectByUsername("demo")).thenReturn(new TodoUser());
         Result<String> result = todoUserService.register(dto);
         assertEquals(400, result.getCode());
