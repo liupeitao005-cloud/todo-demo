@@ -57,14 +57,19 @@
           <button
             v-for="task in filteredTasks"
             :key="task.id"
-            :class="['task-row', { active: selectedTask?.id === task.id }]"
+            :class="['task-row', { active: selectedTask?.id === task.id, done: isFinished(task), next: isNext(task), overdue: isOverdue(task) }]"
             type="button"
             @click="selectTask(task)"
           >
             <div class="task-row-main">
-              <span class="task-star" aria-hidden="true">★</span>
+              <span :class="['task-star', { done: isFinished(task) }]" aria-hidden="true">{{ isFinished(task) ? "✓" : "★" }}</span>
               <div>
-                <h3>{{ task.title || "未命名任务" }}</h3>
+                <h3 class="task-title-line">
+                  <span>{{ task.title || "未命名任务" }}</span>
+                  <em v-if="isFinished(task)" class="task-status-pill done">已完成</em>
+                  <em v-else-if="isNext(task)" class="task-status-pill next">下一个重点</em>
+                  <em v-else-if="isOverdue(task)" class="task-status-pill overdue">已超时</em>
+                </h3>
                 <p>{{ task.content || "暂无任务说明。" }}</p>
               </div>
             </div>
@@ -88,7 +93,12 @@
       <aside class="task-detail-panel">
         <template v-if="selectedTask">
           <div class="detail-head">
-            <h2>任务详情</h2>
+            <div class="detail-title">
+              <h2>任务详情</h2>
+              <span v-if="isFinished(selectedTask)" class="task-status-pill done">已完成</span>
+              <span v-else-if="isNext(selectedTask)" class="task-status-pill next">下一个重点</span>
+              <span v-else-if="isOverdue(selectedTask)" class="task-status-pill overdue">已超时</span>
+            </div>
             <button class="icon-button" type="button" title="刷新列表" @click="loadList">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v6h-6" />
@@ -99,7 +109,7 @@
           <div class="detail-section">
             <span class="detail-label">标题</span>
             <h3>
-              <span class="task-star" aria-hidden="true">★</span>
+              <span :class="['task-star', { done: isFinished(selectedTask) }]" aria-hidden="true">{{ isFinished(selectedTask) ? "✓" : "★" }}</span>
               {{ selectedTask.title || "未命名任务" }}
             </h3>
           </div>
@@ -170,10 +180,14 @@
           <p :class="['status', ok ? 'ok' : 'err']">{{ status }}</p>
           <div class="detail-actions">
             <button class="secondary action-button" type="button" @click="openEdit(selectedTask)">编辑</button>
-            <button class="success action-button" type="button" @click="finish">完成</button>
+            <button class="success action-button" type="button" :disabled="isFinished(selectedTask)" @click="finish">
+              {{ isFinished(selectedTask) ? "已完成" : "完成" }}
+            </button>
             <button class="secondary action-button" type="button" @click="split">拆分</button>
-            <button class="secondary warn action-button" type="button" @click="delay">延期</button>
-            <button class="secondary action-button" type="button" @click="next">设为下一步</button>
+            <button class="secondary warn action-button" type="button" :disabled="isFinished(selectedTask) || !isOverdue(selectedTask)" @click="delay">延期</button>
+            <button class="secondary action-button" type="button" :disabled="isFinished(selectedTask) || isNext(selectedTask)" @click="next">
+              {{ isNext(selectedTask) && !isFinished(selectedTask) ? "已是重点" : "设为下一步" }}
+            </button>
             <button class="danger soft-danger action-button" type="button" @click="remove">删除</button>
           </div>
         </template>
@@ -268,6 +282,9 @@ const taskTypeOptions = [
 
 const filters = [
   { label: "全部", value: "all" },
+  { label: "进行中", value: "active" },
+  { label: "已完成", value: "done" },
+  { label: "下一个重点", value: "next" },
   ...taskTypeOptions.map((type) => ({ label: type.label, value: type.value }))
 ];
 
@@ -287,9 +304,7 @@ const filteredTasks = computed(() => {
   const term = keyword.value.toLowerCase();
   return topLevelTasks.value.filter((task) => {
     const matchesKeyword = !term || String(task.title || "").toLowerCase().includes(term) || String(task.content || "").toLowerCase().includes(term);
-    const matchesFilter =
-      activeFilter.value === "all" ||
-      normalizeTaskType(task.taskType) === activeFilter.value;
+    const matchesFilter = matchesTaskFilter(task, activeFilter.value);
     return matchesKeyword && matchesFilter;
   });
 });
@@ -310,6 +325,14 @@ function isNext(task) {
 function isOverdue(task) {
   if (!task?.finishTime || isFinished(task)) return false;
   return new Date(task.finishTime).getTime() < Date.now();
+}
+
+function matchesTaskFilter(task, filter) {
+  if (filter === "all") return true;
+  if (filter === "active") return !isFinished(task);
+  if (filter === "done") return isFinished(task);
+  if (filter === "next") return isNext(task) && !isFinished(task);
+  return normalizeTaskType(task.taskType) === filter;
 }
 
 function childTasks(task) {
@@ -446,8 +469,11 @@ function payload() {
 function applyTaskList(list) {
   sessionStorage.removeItem("todo-home-dashboard");
   tasks.value = [...list].sort((a, b) => {
-    const aNext = isNext(a) ? 1 : 0;
-    const bNext = isNext(b) ? 1 : 0;
+    const aDone = isFinished(a) ? 1 : 0;
+    const bDone = isFinished(b) ? 1 : 0;
+    if (aDone !== bDone) return aDone - bDone;
+    const aNext = !aDone && isNext(a) ? 1 : 0;
+    const bNext = !bDone && isNext(b) ? 1 : 0;
     if (aNext !== bNext) return bNext - aNext;
     return Number(b.id || 0) - Number(a.id || 0);
   });
@@ -469,10 +495,11 @@ async function loadList() {
 
 async function runOperation(action, successMessage) {
   const data = await run(action);
-  if (data?.code !== 200) return;
+  if (data?.code !== 200) return data;
   await refreshList().catch(() => {});
   status.value = successMessage || data.message || "操作成功";
   ok.value = true;
+  return data;
 }
 
 function validateForm() {
@@ -508,8 +535,10 @@ function needSelectedId() {
   return false;
 }
 
-function finish() {
-  if (needSelectedId()) runOperation(() => taskApi.finish(selectedTask.value.id), "完成成功");
+async function finish() {
+  if (!needSelectedId()) return;
+  const data = await runOperation(() => taskApi.finish(selectedTask.value.id), "完成成功，已放入已完成");
+  if (data?.code === 200) activeFilter.value = "done";
 }
 
 function split() {
@@ -520,8 +549,10 @@ function delay() {
   if (needSelectedId()) runOperation(() => taskApi.delay(selectedTask.value.id), "延期成功");
 }
 
-function next() {
-  if (needSelectedId()) runOperation(() => taskApi.next(selectedTask.value.id), "已设为下一步");
+async function next() {
+  if (!needSelectedId()) return;
+  const data = await runOperation(() => taskApi.next(selectedTask.value.id), "已设为下一个重点");
+  if (data?.code === 200) activeFilter.value = "next";
 }
 
 function remove() {
@@ -730,6 +761,7 @@ onMounted(() => {
 .task-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
   border: 1px solid #e2e8f4;
   border-radius: 8px;
   padding: 3px;
@@ -782,6 +814,20 @@ onMounted(() => {
   box-shadow: inset 0 0 0 1px rgba(47, 109, 246, .35);
 }
 
+.task-row.done {
+  border-color: #bbf7d0;
+  background: #f8fffb;
+}
+
+.task-row.next {
+  border-color: #facc15;
+  background: #fffdf2;
+}
+
+.task-row.overdue {
+  border-color: #fed7aa;
+}
+
 .task-row-main {
   display: flex;
   gap: 12px;
@@ -794,11 +840,50 @@ onMounted(() => {
   line-height: 1.4;
 }
 
+.task-star.done {
+  color: #16a765;
+}
+
 .task-row h3 {
   color: #172033;
   font-size: 17px;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.task-title-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.task-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.task-status-pill.done {
+  color: #16a765;
+  background: #dcfce7;
+}
+
+.task-status-pill.next {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+.task-status-pill.overdue {
+  color: #dc2626;
+  background: #fee2e2;
 }
 
 .task-row p {
@@ -879,6 +964,13 @@ onMounted(() => {
 .detail-head h2 {
   color: #111a33;
   font-size: 18px;
+}
+
+.detail-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
 
 .icon-button {
@@ -1113,6 +1205,11 @@ onMounted(() => {
   padding: 7px 10px;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.action-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
 }
 
 .success {

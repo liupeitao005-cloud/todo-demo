@@ -18,13 +18,13 @@ public interface TodoTaskMapper {
         @Delete("DELETE FROM todo_task WHERE id=#{id} AND user_id=#{userId}")
         int delete (TodoTask task);
 
-        @Update("UPDATE todo_task SET is_finish=1, finish_time=NOW(), update_time=NOW() WHERE id=#{id} AND user_id=#{userId}")
+        @Update("UPDATE todo_task SET is_finish=1, is_next=0, finish_time=NOW(), update_time=NOW() WHERE id=#{id} AND user_id=#{userId}")
         int finish (TodoTask task);
 
-        @Update("UPDATE todo_task SET is_next=1, finish_time=NOW(), update_time=NOW() WHERE id=#{id} AND user_id=#{userId}")
+        @Update("UPDATE todo_task SET is_next=1, update_time=NOW() WHERE id=#{id} AND user_id=#{userId} AND is_finish=0")
         int next (TodoTask task);
 
-        @Select("SELECT id,user_id,title,content,task_type,start_time,finish_time,is_finish,create_time,update_time,parent_id FROM todo_task WHERE id = #{id} AND user_id=#{userId}")
+        @Select("SELECT id,user_id,title,content,task_type,start_time,finish_time,is_finish,is_next,create_time,update_time,parent_id FROM todo_task WHERE id = #{id} AND user_id=#{userId}")
         TodoTask selectByID(TodoTask Task);
 
         @Select("SELECT id,user_id,title,content,task_type,start_time,finish_time,is_finish,is_next,create_time,update_time,parent_id FROM todo_task WHERE user_id=#{userId} ORDER BY COALESCE(start_time, create_time) ASC, id ASC")
