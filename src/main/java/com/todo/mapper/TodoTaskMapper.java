@@ -12,7 +12,7 @@ public interface TodoTaskMapper {
         @Options(useGeneratedKeys = true, keyProperty = "id")
         int insert (TodoTask task);
 
-        @Update("UPDATE todo_task SET title=#{title}, content=#{content}, task_type=#{taskType}, update_time=NOW() WHERE id=#{id} AND user_id=#{userId}")
+        @Update("UPDATE todo_task SET title=#{title}, content=#{content}, task_type=#{taskType}, start_time=COALESCE(#{startTime}, start_time), finish_time=COALESCE(#{finishTime}, finish_time), update_time=NOW() WHERE id=#{id} AND user_id=#{userId}")
         int update (TodoTask task);
 
         @Delete("DELETE FROM todo_task WHERE id=#{id} AND user_id=#{userId}")

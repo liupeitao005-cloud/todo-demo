@@ -2,7 +2,9 @@ package com.todo.service;
 
 import com.todo.dto.TodoReminderDTO;
 import com.todo.dto.TodoTaskDTO;
+import com.todo.entity.TodoReminder;
 import com.todo.entity.TodoTask;
+import com.todo.mapper.TodoReminderMapper;
 import com.todo.mapper.TodoTaskMapper;
 import com.todo.util.Result;
 import com.todo.util.UserContext;
@@ -19,6 +21,7 @@ public class TodoTaskService{
 
     private final TodoTaskMapper todoTaskMapper;
     private final TodoReminderService todoReminderService;
+    private final TodoReminderMapper todoReminderMapper;
 
     @Transactional
     public Result<String> createTodoTask(TodoTaskDTO dto) {
@@ -40,6 +43,7 @@ public class TodoTaskService{
         createTaskReminder(task);
         return Result.success("创建成功");
     }
+    @Transactional
     public Result<String> updateTodoTask(TodoTaskDTO dto) {
         if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
@@ -53,8 +57,21 @@ public class TodoTaskService{
         task.setTitle(dto.getTitle());
         task.setContent(dto.getContent());
         task.setTaskType(dto.getTaskType());
+        task.setStartTime(dto.getStartTime());
+        task.setFinishTime(dto.getFinishTime());
         int row = todoTaskMapper.update(task);
         if (row <= 0) return Result.fail("任务不存在或无权限修改");
+        if (task.getStartTime() != null) {
+            TodoReminder reminder = new TodoReminder();
+            reminder.setUserId(userId);
+            reminder.setTargetType("task");
+            reminder.setTargetId(task.getId());
+            reminder.setTitle("任务提醒：" + task.getTitle());
+            reminder.setContent("你的任务还有 5 分钟开始：" + task.getTitle());
+            reminder.setRemindTime(task.getStartTime().minusMinutes(5));
+            reminder.setChannel("desktop");
+            todoReminderMapper.updateByTarget(reminder);
+        }
         return Result.success("修改成功");
     }
     public Result<List<TodoTask>> listTodoTask() {
@@ -124,6 +141,7 @@ public class TodoTaskService{
         }
            return Result.success("拆分成功");
     }
+    @Transactional
     public Result<String>yanqi(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
@@ -143,10 +161,20 @@ public class TodoTaskService{
             return Result.fail("任务还没超时，不需要延期");
         }
         Duration duration = Duration.between(task.getStartTime(), task.getFinishTime());
-        task.setStartTime(LocalDateTime.now());
-        task.setFinishTime(LocalDateTime.now().plusMinutes(duration.toMinutes()));
+        LocalDateTime newStartTime = LocalDateTime.now();
+        task.setStartTime(newStartTime);
+        task.setFinishTime(newStartTime.plusMinutes(duration.toMinutes()));
         int row = todoTaskMapper.yanqi(task);
         if (row <= 0) return Result.fail("延期失败");
+        TodoReminder reminder = new TodoReminder();
+        reminder.setUserId(userId);
+        reminder.setTargetType("task");
+        reminder.setTargetId(task.getId());
+        reminder.setTitle("任务提醒：" + task.getTitle());
+        reminder.setContent("你的任务还有 5 分钟开始：" + task.getTitle());
+        reminder.setRemindTime(task.getStartTime().minusMinutes(5));
+        reminder.setChannel("desktop");
+        todoReminderMapper.updateByTarget(reminder);
         return Result.success("延期成功");
     }
      public Result<String>nextTodoTask(Long id) {

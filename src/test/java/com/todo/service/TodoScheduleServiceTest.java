@@ -2,6 +2,7 @@ package com.todo.service;
 
 import com.todo.dto.TodoScheduleDTO;
 import com.todo.entity.TodoSchedule;
+import com.todo.mapper.TodoReminderMapper;
 import com.todo.mapper.TodoScheduleMapper;
 import com.todo.util.Result;
 import com.todo.util.UserContext;
@@ -22,6 +23,8 @@ class TodoScheduleServiceTest {
     private TodoScheduleMapper todoScheduleMapper;
     @Mock
     private TodoReminderService todoReminderService;
+    @Mock
+    private TodoReminderMapper todoReminderMapper;
     @InjectMocks
     private TodoScheduleService todoScheduleService;
 
@@ -89,6 +92,29 @@ class TodoScheduleServiceTest {
         assertEquals(200, result.getCode());
         assertEquals("修改成功", result.getMessage());
         verify(todoScheduleMapper).update(any(TodoSchedule.class));
+    }
+
+    @Test
+    void updateTodoScheduleSuccessUpdatesReminder() {
+        UserContext.setUserId(1L);
+        LocalDateTime startTime = LocalDateTime.now().plusHours(1);
+        TodoScheduleDTO dto = new TodoScheduleDTO();
+        dto.setId(1L);
+        dto.setTitle("schedule");
+        dto.setContent("content");
+        dto.setLocation("location");
+        dto.setStartTime(startTime);
+        dto.setFinishTime(startTime.plusHours(1));
+        when(todoScheduleMapper.update(any(TodoSchedule.class))).thenReturn(1);
+
+        todoScheduleService.updateTodoSchedule(dto);
+
+        verify(todoReminderMapper).updateByTarget(argThat(reminder ->
+                "schedule".equals(reminder.getTargetType())
+                        && Long.valueOf(1L).equals(reminder.getTargetId())
+                        && "desktop".equals(reminder.getChannel())
+                        && startTime.minusMinutes(5).equals(reminder.getRemindTime())
+        ));
     }
 
     @Test

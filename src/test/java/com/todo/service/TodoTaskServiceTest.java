@@ -2,6 +2,7 @@ package com.todo.service;
 import com.todo.dto.TodoTaskDTO;
 import com.todo.entity.TodoTask;
 import com.todo.mapper.TodoBacklogMapper;
+import com.todo.mapper.TodoReminderMapper;
 import com.todo.mapper.TodoTaskMapper;
 import com.todo.util.Result;
 import com.todo.util.UserContext;
@@ -27,6 +28,8 @@ public class TodoTaskServiceTest {
     private TodoBacklogMapper todoBacklogMapper;
     @Mock
     private TodoReminderService todoReminderService;
+    @Mock
+    private TodoReminderMapper todoReminderMapper;
     @InjectMocks
     private  TodoTaskService todoTaskService;
     @AfterEach
@@ -102,6 +105,29 @@ public class TodoTaskServiceTest {
         assertEquals("修改成功", result.getMessage());
         verify(todoTaskMapper).update(any(TodoTask.class));
     }
+    @Test
+    void updateTaskSuccessUpdatesReminder() {
+        UserContext.setUserId(1L);
+        LocalDateTime startTime = LocalDateTime.now().plusHours(1);
+        TodoTaskDTO dto = new TodoTaskDTO();
+        dto.setId(1L);
+        dto.setTitle("task");
+        dto.setContent("content");
+        dto.setTaskType("type");
+        dto.setStartTime(startTime);
+        dto.setFinishTime(startTime.plusHours(1));
+        when(todoTaskMapper.update(any(TodoTask.class))).thenReturn(1);
+
+        todoTaskService.updateTodoTask(dto);
+
+        verify(todoReminderMapper).updateByTarget(argThat(reminder ->
+                "task".equals(reminder.getTargetType())
+                        && Long.valueOf(1L).equals(reminder.getTargetId())
+                        && "desktop".equals(reminder.getChannel())
+                        && startTime.minusMinutes(5).equals(reminder.getRemindTime())
+        ));
+    }
+
     @Test
     void deleteTodoTaskFailWhenNotLogin() {
         Result<String> result = todoTaskService.deleteTodoTask(1L);
@@ -315,6 +341,28 @@ public class TodoTaskServiceTest {
         verify(todoTaskMapper).selectByID(any(TodoTask.class));
         verify(todoTaskMapper).yanqi(any(TodoTask.class));
     }
+    @Test
+    void yanqiSuccessUpdatesReminder() {
+        UserContext.setUserId(1L);
+        TodoTask task = new TodoTask();
+        task.setId(1L);
+        task.setTitle("task");
+        task.setIsFinish(0);
+        task.setStartTime(LocalDateTime.now().minusHours(3));
+        task.setFinishTime(LocalDateTime.now().minusHours(1));
+        when(todoTaskMapper.selectByID(any(TodoTask.class))).thenReturn(task);
+        when(todoTaskMapper.yanqi(any(TodoTask.class))).thenReturn(1);
+
+        todoTaskService.yanqi(1L);
+
+        verify(todoReminderMapper).updateByTarget(argThat(reminder ->
+                "task".equals(reminder.getTargetType())
+                        && Long.valueOf(1L).equals(reminder.getTargetId())
+                        && "desktop".equals(reminder.getChannel())
+                        && reminder.getRemindTime() != null
+        ));
+    }
+
     @Test
     void nextFailWhenNotLogin(){
         Result<String> result = todoTaskService.nextTodoTask(1L);

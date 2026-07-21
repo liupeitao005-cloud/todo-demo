@@ -2,7 +2,9 @@ package com.todo.service;
 
 import com.todo.dto.TodoReminderDTO;
 import com.todo.dto.TodoScheduleDTO;
+import com.todo.entity.TodoReminder;
 import com.todo.entity.TodoSchedule;
+import com.todo.mapper.TodoReminderMapper;
 import com.todo.mapper.TodoScheduleMapper;
 import com.todo.util.Result;
 import com.todo.util.UserContext;
@@ -17,6 +19,7 @@ import java.util.List;
 public class TodoScheduleService {
     private final TodoScheduleMapper todoScheduleMapper;
     private final TodoReminderService todoReminderService;
+    private final TodoReminderMapper todoReminderMapper;
 
     @Transactional
     public Result<String> createTodoSchedule(TodoScheduleDTO dto) {
@@ -38,6 +41,7 @@ public class TodoScheduleService {
         return Result.success("创建成功");
     }
 
+    @Transactional
     public Result<String> updateTodoSchedule(TodoScheduleDTO dto) {
         if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
@@ -55,6 +59,17 @@ public class TodoScheduleService {
         schedule.setFinishTime(dto.getFinishTime());
         int row = todoScheduleMapper.update(schedule);
         if (row <= 0) return Result.fail("行程不存在或无权限修改");
+        if (schedule.getStartTime() != null) {
+            TodoReminder reminder = new TodoReminder();
+            reminder.setUserId(userId);
+            reminder.setTargetType("schedule");
+            reminder.setTargetId(schedule.getId());
+            reminder.setTitle("行程提醒：" + schedule.getTitle());
+            reminder.setContent("你的行程还有 5 分钟开始：" + schedule.getTitle());
+            reminder.setRemindTime(schedule.getStartTime().minusMinutes(5));
+            reminder.setChannel("desktop");
+            todoReminderMapper.updateByTarget(reminder);
+        }
         return Result.success("修改成功");
     }
     @Transactional

@@ -50,6 +50,35 @@ public class TodoReminderMapperTest extends MapperTestBase {
         assertEquals(1, row);
     }
 
+    @Test
+    void updateByTargetSuccess() {
+        Long userId = createUser();
+        TodoReminder reminder = newReminder(userId);
+        todoReminderMapper.insert(reminder);
+        todoReminderMapper.update(reminder);
+
+        LocalDateTime newRemindTime = LocalDateTime.of(2030, 1, 1, 10, 0);
+        TodoReminder updateReminder = new TodoReminder();
+        updateReminder.setUserId(userId);
+        updateReminder.setTargetType("task");
+        updateReminder.setTargetId(1L);
+        updateReminder.setTitle("new title");
+        updateReminder.setContent("new content");
+        updateReminder.setRemindTime(newRemindTime);
+        updateReminder.setChannel("desktop");
+        int row = todoReminderMapper.updateByTarget(updateReminder);
+
+        TodoReminder query = new TodoReminder();
+        query.setUserId(userId);
+        query.setId(reminder.getId());
+        TodoReminder savedReminder = todoReminderMapper.selectById(query);
+        assertEquals(1, row);
+        assertEquals("new title", savedReminder.getTitle());
+        assertEquals("new content", savedReminder.getContent());
+        assertEquals(0, savedReminder.getIsSent());
+        assertEquals(newRemindTime.withNano(0), savedReminder.getRemindTime().withNano(0));
+    }
+
     private TodoReminder newReminder(Long userId) {
         TodoReminder reminder = new TodoReminder();
         reminder.setUserId(userId);

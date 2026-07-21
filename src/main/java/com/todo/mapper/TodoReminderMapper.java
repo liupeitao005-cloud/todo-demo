@@ -34,6 +34,9 @@ public interface TodoReminderMapper {
     @Update("UPDATE todo_reminder SET  is_sent = 1, update_time = NOW() WHERE user_id = #{userId} AND target_type = #{targetType} AND target_id = #{targetId} AND is_sent = 0")
     int cancelByTarget(TodoReminder reminder);
 
+    @Update("UPDATE todo_reminder SET title=#{title}, content=#{content}, remind_time=#{remindTime}, is_sent=0, update_time=NOW() WHERE user_id=#{userId} AND target_type=#{targetType} AND target_id=#{targetId} AND channel=#{channel}")
+    int updateByTarget(TodoReminder reminder);
+
     @Select("SELECT COUNT(*) FROM todo_reminder WHERE user_id=#{userId} AND target_type=#{targetType} AND target_id=#{targetId} AND channel=#{channel}")
     int countByTarget(TodoReminder reminder);
 
