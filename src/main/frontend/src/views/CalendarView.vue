@@ -134,6 +134,29 @@
           <p v-else class="empty-text">今天没有任务或行程。</p>
         </section>
 
+        <section class="side-card selected-day-card">
+          <div class="side-head">
+            <h2>选中日期</h2>
+            <span>{{ selectedDayItems.length }} 项</span>
+          </div>
+          <div class="selected-day-label">{{ selectedDayLabel }}</div>
+          <div v-if="selectedDayItems.length" class="today-list">
+            <button
+              v-for="item in selectedDayItems"
+              :key="`selected-${item.key}`"
+              :class="['today-item', { active: selectedItem?.key === item.key }]"
+              type="button"
+              @click="selectItem(item)"
+            >
+              <i :class="[item.itemType, item.tone]"></i>
+              <time>{{ formatTimeRange(item.startTime, item.finishTime) }}</time>
+              <strong>{{ item.title || "未命名事项" }}</strong>
+              <small>{{ item.itemType === "schedule" ? (item.location || "行程") : "任务" }}</small>
+            </button>
+          </div>
+          <p v-else class="empty-text">这一天没有任务或行程。</p>
+        </section>
+
         <section class="side-card detail-card">
           <div class="side-head">
             <h2>事项详情</h2>
@@ -266,7 +289,22 @@ const todayItems = computed(() => {
     .sort((a, b) => parseDate(a.startTime) - parseDate(b.startTime));
 });
 
-const selectedItem = computed(() => positionedItems.value.find((item) => item.key === selectedKey.value) || filteredItems.value.find((item) => item.key === selectedKey.value) || todayItems.value.find((item) => item.key === selectedKey.value) || positionedItems.value[0] || todayItems.value[0] || null);
+const selectedDayItems = computed(() => {
+  return itemsOnDay(selectedDate.value).sort((a, b) => parseDate(a.startTime) - parseDate(b.startTime));
+});
+
+const selectedDayLabel = computed(() => fullDate(selectedDate.value));
+
+const selectedItem = computed(() => {
+  const itemByKey = selectedDayItems.value.find((item) => item.key === selectedKey.value)
+    || positionedItems.value.find((item) => item.key === selectedKey.value)
+    || filteredItems.value.find((item) => item.key === selectedKey.value)
+    || todayItems.value.find((item) => item.key === selectedKey.value);
+  if (itemByKey) return itemByKey;
+  if (selectedDayItems.value.length) return selectedDayItems.value[0];
+  if (mode.value === "year") return null;
+  return positionedItems.value[0] || todayItems.value[0] || null;
+});
 
 watch([selectedDate, mode, customStart, customEnd], () => loadCalendar());
 
@@ -942,14 +980,14 @@ onMounted(() => loadCalendar());
 
 .today-item {
   display: grid;
-  grid-template-columns: 12px 54px minmax(0, 1fr);
-  gap: 8px 12px;
+  grid-template-columns: 12px minmax(0, 1fr) max-content;
+  gap: 4px 10px;
   align-items: start;
   min-height: 58px;
   border: 0;
   border-bottom: 1px solid #edf2f8;
-  border-radius: 0;
-  padding: 9px 0;
+  border-radius: 8px;
+  padding: 9px 8px;
   color: #465670;
   background: transparent;
   text-align: left;
@@ -960,7 +998,14 @@ onMounted(() => loadCalendar());
   background: transparent;
 }
 
+.today-item.active {
+  color: #2f6df6;
+  background: #f5f8ff;
+}
+
 .today-item i {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   width: 9px;
   height: 9px;
   margin-top: 6px;
@@ -972,19 +1017,38 @@ onMounted(() => loadCalendar());
 }
 
 .today-item time {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
   color: #60708c;
+  font-size: 12px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .today-item strong {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
   color: #1f2937;
+  line-height: 1.35;
   overflow-wrap: anywhere;
 }
 
 .today-item small {
-  grid-column: 3;
+  grid-column: 2 / 4;
+  grid-row: 2;
   color: #71809a;
   overflow-wrap: anywhere;
+}
+
+.selected-day-card {
+  max-height: 360px;
+}
+
+.selected-day-label {
+  color: #60708c;
+  font-weight: 900;
 }
 
 .detail-card h3 {
@@ -1085,6 +1149,29 @@ onMounted(() => loadCalendar());
 
   .calendar-panel {
     max-height: 58vh;
+  }
+
+  .today-item {
+    grid-template-columns: 12px minmax(0, 1fr);
+  }
+
+  .today-item time,
+  .today-item strong,
+  .today-item small {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .today-item time {
+    grid-row: 1;
+  }
+
+  .today-item strong {
+    grid-row: 2;
+  }
+
+  .today-item small {
+    grid-row: 3;
   }
 }
 </style>
