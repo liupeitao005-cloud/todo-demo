@@ -1,5 +1,6 @@
 package com.todo.service;
 
+import com.todo.dto.TodoReminderDTO;
 import com.todo.dto.TodoScheduleDTO;
 import com.todo.entity.TodoSchedule;
 import com.todo.mapper.TodoScheduleMapper;
@@ -7,6 +8,7 @@ import com.todo.util.Result;
 import com.todo.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +16,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TodoScheduleService {
     private final TodoScheduleMapper todoScheduleMapper;
+    private final TodoReminderService todoReminderService;
 
+    @Transactional
     public Result<String> createTodoSchedule(TodoScheduleDTO dto) {
         if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
@@ -30,6 +34,7 @@ public class TodoScheduleService {
         schedule.setStartTime(dto.getStartTime());
         schedule.setFinishTime(dto.getFinishTime());
         todoScheduleMapper.insert(schedule);
+        createScheduleReminder(schedule);
         return Result.success("创建成功");
     }
 
@@ -52,7 +57,7 @@ public class TodoScheduleService {
         if (row <= 0) return Result.fail("行程不存在或无权限修改");
         return Result.success("修改成功");
     }
-
+    @Transactional
     public Result<String> deleteTodoSchedule(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
@@ -61,6 +66,7 @@ public class TodoScheduleService {
         schedule.setUserId(userId);
         int row = todoScheduleMapper.delete(schedule);
         if (row <= 0) return Result.fail("行程不存在或无权限删除");
+        todoReminderService.cancelByTarget(userId, "schedule", id);
         return Result.success("删除成功");
     }
 
@@ -68,5 +74,18 @@ public class TodoScheduleService {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
         return Result.success("查询成功", todoScheduleMapper.listByUserId(userId));
+    }
+    private void createScheduleReminder(TodoSchedule schedule) {
+        if (schedule == null || schedule.getId() == null || schedule.getStartTime() == null) {
+            return;
+        }
+        TodoReminderDTO reminderDTO = new TodoReminderDTO();
+        reminderDTO.setTargetType("schedule");
+        reminderDTO.setTargetId(schedule.getId());
+        reminderDTO.setTitle("行程提醒：" + schedule.getTitle());
+        reminderDTO.setContent("你的行程还有 5 分钟开始：" + schedule.getTitle());
+        reminderDTO.setRemindTime(schedule.getStartTime().minusMinutes(5));
+        reminderDTO.setChannel("desktop");
+        todoReminderService.createReminder(reminderDTO);
     }
 }

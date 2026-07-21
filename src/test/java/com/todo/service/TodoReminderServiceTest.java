@@ -3,7 +3,10 @@ package com.todo.service;
 
 import com.todo.dto.TodoReminderDTO;
 import com.todo.entity.TodoReminder;
+import com.todo.mapper.TodoReviewplanMapper;
 import com.todo.mapper.TodoReminderMapper;
+import com.todo.mapper.TodoScheduleMapper;
+import com.todo.mapper.TodoTaskMapper;
 import com.todo.util.Result;
 import com.todo.util.UserContext;
 import com.todo.vo.TodoReminderVO;
@@ -26,6 +29,12 @@ import static org.mockito.Mockito.*;
 class TodoReminderServiceTest {
     @Mock
     private  TodoReminderMapper todoReminderMapper;
+    @Mock
+    private TodoTaskMapper todoTaskMapper;
+    @Mock
+    private TodoScheduleMapper todoScheduleMapper;
+    @Mock
+    private TodoReviewplanMapper todoReviewplanMapper;
     @InjectMocks
     private  TodoReminderService todoReminderService;
     @AfterEach
@@ -139,5 +148,16 @@ class TodoReminderServiceTest {
         verify(todoReminderMapper).update(argThat(reminder -> reminder.getId().equals(3L)));
         verify(todoReminderMapper, never()).update(argThat(reminder -> reminder.getId().equals(1L)));
         verify(todoReminderMapper, never()).update(argThat(reminder -> reminder.getId().equals(2L)));
+    }
+
+    @Test
+    void cancelByTargetSuccess() {
+        todoReminderService.cancelByTarget(1L, "task", 2L);
+
+        verify(todoReminderMapper).cancelByTarget(argThat(reminder ->
+                Long.valueOf(1L).equals(reminder.getUserId())
+                        && "task".equals(reminder.getTargetType())
+                        && Long.valueOf(2L).equals(reminder.getTargetId())
+        ));
     }
 }

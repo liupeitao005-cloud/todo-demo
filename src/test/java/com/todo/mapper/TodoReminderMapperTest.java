@@ -38,7 +38,7 @@ public class TodoReminderMapperTest extends MapperTestBase {
         assertFalse(result.isEmpty());
         assertEquals(reminder.getId(), result.get(0).getId());
         assertEquals("task", result.get(0).getTargetType());
-        assertEquals("test reminder", result.get(0).getTitle());
+        assertEquals("测试标题", result.get(0).getTitle());
     }
 
     @Test

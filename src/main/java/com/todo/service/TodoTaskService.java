@@ -1,5 +1,6 @@
 package com.todo.service;
 
+import com.todo.dto.TodoReminderDTO;
 import com.todo.dto.TodoTaskDTO;
 import com.todo.entity.TodoTask;
 import com.todo.mapper.TodoTaskMapper;
@@ -17,7 +18,9 @@ import java.util.List;
 public class TodoTaskService{
 
     private final TodoTaskMapper todoTaskMapper;
+    private final TodoReminderService todoReminderService;
 
+    @Transactional
     public Result<String> createTodoTask(TodoTaskDTO dto) {
         if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
@@ -34,6 +37,7 @@ public class TodoTaskService{
         task.setStartTime(dto.getStartTime());
         task.setFinishTime(dto.getFinishTime());
         todoTaskMapper.insert(task);
+        createTaskReminder(task);
         return Result.success("创建成功");
     }
     public Result<String> updateTodoTask(TodoTaskDTO dto) {
@@ -58,6 +62,7 @@ public class TodoTaskService{
         if (userId == null) return Result.fail("未登录");
         return Result.success("查询成功", todoTaskMapper.listByUserId(userId));
     }
+    @Transactional
     public Result<String> deleteTodoTask(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
@@ -66,8 +71,10 @@ public class TodoTaskService{
         task.setUserId(userId);
         int row = todoTaskMapper.delete(task);
         if (row <= 0) return Result.fail("任务不存在或无权限删除");
+        todoReminderService.cancelByTarget(userId, "task", id);
         return Result.success("删除成功");
     }
+    @Transactional
     public Result<String> finishTodoTask(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
@@ -76,6 +83,7 @@ public class TodoTaskService{
         task.setUserId(userId);
         int row = todoTaskMapper.finish(task);
         if (row <= 0) return Result.fail("任务不存在或无权限完成");
+        todoReminderService.cancelByTarget(userId, "task", id);
         return Result.success("完成成功");
     }
     @Transactional
@@ -151,4 +159,17 @@ public class TodoTaskService{
          if (row <= 0) return Result.fail("任务不存在、已完成或无权限操作");
          return Result.success("设置成功");
      }
+    private void createTaskReminder(TodoTask task) {
+        if (task == null || task.getId() == null || task.getStartTime() == null) {
+            return;
+        }
+        TodoReminderDTO reminderDTO = new TodoReminderDTO();
+        reminderDTO.setTargetType("task");
+        reminderDTO.setTargetId(task.getId());
+        reminderDTO.setTitle("任务提醒：" + task.getTitle());
+        reminderDTO.setContent("你的任务还有 5 分钟开始：" + task.getTitle());
+        reminderDTO.setRemindTime(task.getStartTime().minusMinutes(5));
+        reminderDTO.setChannel("desktop");
+        todoReminderService.createReminder(reminderDTO);
+    }
 }

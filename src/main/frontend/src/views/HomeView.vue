@@ -9,9 +9,38 @@
         <button class="icon-button" type="button" title="搜索" aria-label="搜索">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" /></svg>
         </button>
-        <button class="icon-button" type="button" title="通知" aria-label="通知">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7ZM13.7 21a2 2 0 0 1-3.4 0" /></svg>
-        </button>
+        <div class="notification-wrap">
+          <button
+            :class="['icon-button', 'bell-button', { active: reminderPanelOpen, hasReminder: pendingReminders.length }]"
+            type="button"
+            title="通知"
+            aria-label="通知"
+            @click="toggleReminderPanel"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7ZM13.7 21a2 2 0 0 1-3.4 0" /></svg>
+            <span v-if="pendingReminders.length" class="notification-badge">{{ reminderBadgeText }}</span>
+          </button>
+          <div v-if="reminderPanelOpen" class="notification-panel">
+            <div class="notification-head">
+              <strong>提醒</strong>
+              <button v-if="pendingReminders.length" type="button" @click="markAllRemindersRead">全部已读</button>
+            </div>
+            <div v-if="pendingReminders.length" class="notification-list">
+              <button
+                v-for="reminder in pendingReminders"
+                :key="reminder.id"
+                class="notification-item"
+                type="button"
+                @click="markReminderRead(reminder)"
+              >
+                <strong>{{ reminder.title || "Todo 提醒" }}</strong>
+                <span>{{ reminder.content || "你有一条到期提醒" }}</span>
+                <small>{{ formatShortDate(reminder.remindTime) }} · {{ reminderTypeLabel(reminder.targetType) }}</small>
+              </button>
+            </div>
+            <p v-else class="notification-empty">暂无到期提醒</p>
+          </div>
+        </div>
         <button class="primary-add" type="button" @click="openCreateModal()">
           <span aria-hidden="true">+</span>
           添加事项
@@ -263,11 +292,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
-import { backlogApi, habitApi, scheduleApi, taskApi } from "@/api/todoApi";
+import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { backlogApi, habitApi, reminderApi, scheduleApi, taskApi } from "@/api/todoApi";
 import { authState } from "@/stores/auth";
 
 const cachedDashboard = readDashboardCache();
+const REMINDER_POLL_MS = 30000;
 const lists = reactive({
   backlogs: cachedDashboard?.backlogs || [],
   tasks: cachedDashboard?.tasks || [],
@@ -283,6 +313,11 @@ const selectedType = ref("backlog");
 const loadError = ref("");
 const createStatus = ref("");
 const createOk = ref(false);
+const pendingReminders = ref([]);
+const reminderPanelOpen = ref(false);
+const notifiedReminderIds = new Set();
+let reminderTimer = null;
+let reminderLoading = false;
 
 const createForm = reactive({
   title: "",
@@ -320,6 +355,8 @@ const todayText = computed(() => {
 });
 const hasAnyData = computed(() => lists.backlogs.length + lists.tasks.length + lists.schedules.length + lists.habits.length > 0);
 const currentCreateLabel = computed(() => createTypes.find((item) => item.value === selectedType.value)?.label || "创建");
+
+const reminderBadgeText = computed(() => pendingReminders.value.length > 99 ? "99+" : String(pendingReminders.value.length));
 
 const todayTodos = computed(() => {
   return lists.backlogs.map((item, index) => ({
@@ -406,6 +443,70 @@ function formatTimeRange(start, finish) {
   if (!start && !finish) return "";
   if (!finish) return formatShortDate(start);
   return `${formatShortDate(start)} - ${formatShortDate(finish).slice(6)}`;
+}
+
+function reminderTypeLabel(type) {
+  const labels = {
+    task: "任务",
+    schedule: "行程",
+    review: "复习"
+  };
+  return labels[type] || "提醒";
+}
+
+function toggleReminderPanel() {
+  reminderPanelOpen.value = !reminderPanelOpen.value;
+  if (reminderPanelOpen.value) {
+    requestNotificationPermission();
+    loadPendingReminders({ notify: false });
+  }
+}
+
+async function loadPendingReminders(options = {}) {
+  if (reminderLoading) return;
+  reminderLoading = true;
+  try {
+    const data = await reminderApi.pending();
+    const reminders = Array.isArray(data?.data) ? data.data : [];
+    pendingReminders.value = reminders;
+    if (options.notify !== false) notifyDueReminders(reminders);
+  } catch {
+    pendingReminders.value = [];
+  } finally {
+    reminderLoading = false;
+  }
+}
+
+function notifyDueReminders(reminders) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  for (const reminder of reminders) {
+    if (!reminder?.id || notifiedReminderIds.has(reminder.id)) continue;
+    notifiedReminderIds.add(reminder.id);
+    new Notification(reminder.title || "Todo 提醒", {
+      body: reminder.content || "你有一条到期提醒"
+    });
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window) || Notification.permission !== "default") return;
+  try {
+    await Notification.requestPermission();
+  } catch {
+    // Browser notification permission is optional; the in-app bell still works.
+  }
+}
+
+async function markReminderRead(reminder) {
+  if (!reminder?.id) return;
+  await reminderApi.read(reminder.id);
+  pendingReminders.value = pendingReminders.value.filter((item) => item.id !== reminder.id);
+}
+
+async function markAllRemindersRead() {
+  const reminders = [...pendingReminders.value];
+  await Promise.allSettled(reminders.filter((item) => item?.id).map((item) => reminderApi.read(item.id)));
+  pendingReminders.value = [];
 }
 
 function toDateTimeLocal(date) {
@@ -519,6 +620,7 @@ async function submitCreate() {
     optimisticCreate(type, payloads[type]);
     modalOpen.value = false;
     await loadDashboard({ silent: true });
+    await loadPendingReminders({ notify: false });
   } catch (error) {
     createStatus.value = error?.message || "创建失败，请稍后重试";
     createOk.value = false;
@@ -551,6 +653,14 @@ async function loadDashboard(options = {}) {
 
 onMounted(() => {
   loadDashboard();
+  loadPendingReminders({ notify: false });
+  reminderTimer = window.setInterval(() => loadPendingReminders(), REMINDER_POLL_MS);
+});
+
+onUnmounted(() => {
+  if (reminderTimer) {
+    window.clearInterval(reminderTimer);
+  }
 });
 
 function readDashboardCache() {
@@ -636,6 +746,121 @@ function cacheDashboard() {
 
 .icon-button:hover {
   background: rgba(37, 99, 235, .08);
+}
+
+.notification-wrap {
+  position: relative;
+}
+
+.bell-button {
+  position: relative;
+}
+
+.bell-button.active,
+.bell-button.hasReminder {
+  color: #2f6df6;
+  background: rgba(47, 109, 246, .10);
+}
+
+.notification-badge {
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  padding: 0 5px;
+  color: #fff;
+  background: #ef4444;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.notification-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 12px);
+  z-index: 15;
+  width: min(360px, calc(100vw - 44px));
+  max-height: min(430px, calc(100vh - 140px));
+  overflow: hidden;
+  border: 1px solid #e1e7f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .18);
+}
+
+.notification-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  min-height: 54px;
+  padding: 0 16px;
+  border-bottom: 1px solid #edf1f7;
+}
+
+.notification-head strong {
+  color: #111a33;
+  font-size: 16px;
+}
+
+.notification-head button {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #2f6df6;
+  background: #eef4ff;
+  font-weight: 800;
+}
+
+.notification-list {
+  display: grid;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.notification-item {
+  display: grid;
+  gap: 6px;
+  border: 0;
+  border-bottom: 1px solid #edf1f7;
+  border-radius: 0;
+  padding: 14px 16px;
+  color: #1d2638;
+  background: #fff;
+  text-align: left;
+}
+
+.notification-item:hover {
+  background: #f7faff;
+}
+
+.notification-item strong,
+.notification-item span,
+.notification-item small {
+  overflow-wrap: anywhere;
+}
+
+.notification-item span {
+  color: #64718a;
+  line-height: 1.55;
+}
+
+.notification-item small,
+.notification-empty {
+  color: #71809a;
+}
+
+.notification-empty {
+  margin: 0;
+  padding: 22px 16px;
+  text-align: center;
+  font-weight: 700;
 }
 
 .icon-button svg,

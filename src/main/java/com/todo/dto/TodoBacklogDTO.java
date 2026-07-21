@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class TodoBacklogDTO {
-    @NotNull(message = "待办ID不能为空", groups = {ValidationGroups.Update.class, ValidationGroups.Move.class})
+    @NotNull(message = "待办ID不能为空", groups = {ValidationGroups.Update.class, ValidationGroups.Move.class, ValidationGroups.IdRequired.class})
     private Long id;
 
     @NotBlank(message = "待办标题不能为空", groups = {ValidationGroups.Create.class, ValidationGroups.Update.class})

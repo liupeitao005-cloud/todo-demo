@@ -16,7 +16,7 @@ public interface TodoReminderMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(TodoReminder reminder);
 
-    @Select("SELECT id, target_type, target_id, title, content, remind_time, channel FROM todo_reminder WHERE user_id=#{userId} AND channel=#{channel} AND is_sent=0 AND remind_time<=NOW() ORDER BY remind_time ASC")
+    @Select("SELECT id, target_type, target_id, title, content, remind_time, channel FROM todo_reminder WHERE user_id=#{userId} AND channel=#{channel} AND is_sent=0 AND remind_time BETWEEN DATE_SUB(NOW(), INTERVAL 15 MINUTE) AND NOW() ORDER BY remind_time ASC")
     List<TodoReminderVO> selectPending(TodoReminder reminder);
 
     @Select("SELECT id,user_id,target_type,target_id,title,content,remind_time,channel,is_sent,create_time,update_time FROM todo_reminder WHERE user_id=#{userId} ORDER BY remind_time DESC, id DESC")
@@ -27,4 +27,14 @@ public interface TodoReminderMapper {
 
     @Update("UPDATE todo_reminder SET is_sent=1, update_time=NOW() WHERE id=#{id} AND user_id=#{userId}")
     int update(TodoReminder reminder);
+
+    @Select("SELECT id,user_id,target_type,target_id,title,content,remind_time,channel,is_sent,create_time,update_time FROM todo_reminder WHERE id=#{id} AND user_id=#{userId}")
+    TodoReminder selectById(TodoReminder reminder);
+
+    @Update("UPDATE todo_reminder SET  is_sent = 1, update_time = NOW() WHERE user_id = #{userId} AND target_type = #{targetType} AND target_id = #{targetId} AND is_sent = 0")
+    int cancelByTarget(TodoReminder reminder);
+
+    @Select("SELECT COUNT(*) FROM todo_reminder WHERE user_id=#{userId} AND target_type=#{targetType} AND target_id=#{targetId} AND channel=#{channel}")
+    int countByTarget(TodoReminder reminder);
+
 }

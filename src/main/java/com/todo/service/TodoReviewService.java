@@ -1,5 +1,6 @@
 package com.todo.service;
 
+import com.todo.dto.TodoReminderDTO;
 import com.todo.dto.TodoReviewDTO;
 import com.todo.entity.TodoReview;
 import com.todo.entity.TodoReviewplan;
@@ -20,6 +21,7 @@ import java.util.List;
 public class TodoReviewService {
     private final TodoReviewMapper todoReviewMapper;
     private final TodoReviewplanMapper todoReviewplanMapper;
+    private final TodoReminderService todoReminderService;
 
     @Transactional
     public Result<String> createReview(TodoReviewDTO dto) {
@@ -64,11 +66,12 @@ public class TodoReviewService {
             plan.setReviewTime(reviewTime);
             plan.setIsFinish(0);
             todoReviewplanMapper.insert(plan);
+            createReviewReminder(plan);
             count++;
         }
         return Result.success("复习计划生成成功", count);
     }
-
+    @Transactional
     public Result<String> finishReviewPlan(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
@@ -76,6 +79,7 @@ public class TodoReviewService {
         if (row <= 0) {
             return Result.fail("复习计划不存在或无权限");
         }
+        todoReminderService.cancelByTarget(userId, "review", id);
         return Result.success("复习完成记录成功");
     }
 
@@ -83,5 +87,18 @@ public class TodoReviewService {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
         return Result.success("查询成功", todoReviewplanMapper.listByUserId(userId));
+    }
+    private void createReviewReminder(TodoReviewplan plan) {
+        if (plan == null || plan.getId() == null || plan.getReviewTime() == null) {
+            return;
+        }
+        TodoReminderDTO reminderDTO = new TodoReminderDTO();
+        reminderDTO.setTargetType("review");
+        reminderDTO.setTargetId(plan.getId());
+        reminderDTO.setTitle("复习提醒");
+        reminderDTO.setContent("你的复习计划还有 5 分钟开始");
+        reminderDTO.setRemindTime(plan.getReviewTime().minusMinutes(5));
+        reminderDTO.setChannel("desktop");
+        todoReminderService.createReminder(reminderDTO);
     }
 }

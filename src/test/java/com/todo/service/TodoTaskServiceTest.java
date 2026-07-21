@@ -25,6 +25,8 @@ public class TodoTaskServiceTest {
     private  TodoTaskMapper todoTaskMapper;
     @Mock
     private TodoBacklogMapper todoBacklogMapper;
+    @Mock
+    private TodoReminderService todoReminderService;
     @InjectMocks
     private  TodoTaskService todoTaskService;
     @AfterEach
@@ -50,11 +52,21 @@ public class TodoTaskServiceTest {
         dto.setTaskType("长期任务");
         dto.setStartTime(LocalDateTime.now());
         dto.setFinishTime(LocalDateTime.now().plusHours(2));
-        when(todoTaskMapper.insert(any(TodoTask.class))).thenReturn(1);
+        when(todoTaskMapper.insert(any(TodoTask.class))).thenAnswer(invocation -> {
+            TodoTask task = invocation.getArgument(0);
+            task.setId(1L);
+            return 1;
+        });
         Result<String> result = todoTaskService.createTodoTask(dto);
         assertEquals(200, result.getCode());
         assertEquals("创建成功", result.getMessage());
         verify(todoTaskMapper).insert(any(TodoTask.class));
+        verify(todoReminderService).createReminder(argThat(reminder ->
+                "task".equals(reminder.getTargetType())
+                        && Long.valueOf(1L).equals(reminder.getTargetId())
+                        && "desktop".equals(reminder.getChannel())
+                        && dto.getStartTime().minusMinutes(5).equals(reminder.getRemindTime())
+        ));
 
     }
     @Test
@@ -331,4 +343,23 @@ public class TodoTaskServiceTest {
 
     }
 
+    @Test
+    void deleteTaskSuccessCancelsReminder() {
+        UserContext.setUserId(1L);
+        when(todoTaskMapper.delete(any(TodoTask.class))).thenReturn(1);
+
+        todoTaskService.deleteTodoTask(1L);
+
+        verify(todoReminderService).cancelByTarget(1L, "task", 1L);
+    }
+
+    @Test
+    void finishTaskSuccessCancelsReminder() {
+        UserContext.setUserId(1L);
+        when(todoTaskMapper.finish(any(TodoTask.class))).thenReturn(1);
+
+        todoTaskService.finishTodoTask(1L);
+
+        verify(todoReminderService).cancelByTarget(1L, "task", 1L);
+    }
 }

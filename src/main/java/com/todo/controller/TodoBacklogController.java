@@ -41,11 +41,9 @@ public class TodoBacklogController {
     }
 
     @Operation(summary = "删除待办")
-    @RequestMapping(value = "/delete", method = {RequestMethod.DELETE, RequestMethod.POST})
-    public Result<String> delete(@RequestParam(required = false) Long id,
-                                 @RequestBody(required = false) TodoBacklogDTO dto) {
-        Long backlogId = id != null ? id : (dto == null ? null : dto.getId());
-        return todoBacklogService.deleteBacklog(backlogId);
+    @DeleteMapping("/delete")
+    public Result<String> delete(@Validated(ValidationGroups.IdRequired.class) @RequestBody TodoBacklogDTO dto) {
+        return todoBacklogService.deleteBacklog(dto.getId());
     }
 
     @Operation(summary = "查询待办列表")

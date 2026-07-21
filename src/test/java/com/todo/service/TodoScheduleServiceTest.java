@@ -20,6 +20,8 @@ import static org.mockito.Mockito.*;
 class TodoScheduleServiceTest {
     @Mock
     private TodoScheduleMapper todoScheduleMapper;
+    @Mock
+    private TodoReminderService todoReminderService;
     @InjectMocks
     private TodoScheduleService todoScheduleService;
 
@@ -116,6 +118,39 @@ class TodoScheduleServiceTest {
         assertEquals(200, result.getCode());
         assertEquals("删除成功", result.getMessage());
         verify(todoScheduleMapper).delete(any(TodoSchedule.class));
+    }
+    @Test
+    void createTodoScheduleSuccessCreatesReminder() {
+        UserContext.setUserId(1L);
+        TodoScheduleDTO dto = new TodoScheduleDTO();
+        dto.setTitle("schedule");
+        dto.setContent("content");
+        dto.setStartTime(LocalDateTime.now());
+        dto.setFinishTime(LocalDateTime.now().plusHours(1));
+        when(todoScheduleMapper.insert(any(TodoSchedule.class))).thenAnswer(invocation -> {
+            TodoSchedule schedule = invocation.getArgument(0);
+            schedule.setId(1L);
+            return 1;
+        });
+
+        todoScheduleService.createTodoSchedule(dto);
+
+        verify(todoReminderService).createReminder(argThat(reminder ->
+                "schedule".equals(reminder.getTargetType())
+                        && Long.valueOf(1L).equals(reminder.getTargetId())
+                        && "desktop".equals(reminder.getChannel())
+                        && dto.getStartTime().minusMinutes(5).equals(reminder.getRemindTime())
+        ));
+    }
+
+    @Test
+    void deleteTodoScheduleSuccessCancelsReminder() {
+        UserContext.setUserId(1L);
+        when(todoScheduleMapper.delete(any(TodoSchedule.class))).thenReturn(1);
+
+        todoScheduleService.deleteTodoSchedule(1L);
+
+        verify(todoReminderService).cancelByTarget(1L, "schedule", 1L);
     }
 }
 

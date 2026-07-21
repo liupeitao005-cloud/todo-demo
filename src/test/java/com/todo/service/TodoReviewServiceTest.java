@@ -24,6 +24,8 @@ class TodoReviewServiceTest {
     private  TodoReviewMapper todoReviewMapper;
     @Mock
     private  TodoReviewplanMapper todoReviewplanMapper;
+    @Mock
+    private TodoReminderService todoReminderService;
     @InjectMocks
     private TodoReviewService todoReviewService;
     @AfterEach
@@ -83,4 +85,39 @@ class TodoReviewServiceTest {
         verify(todoReviewplanMapper).finish(anyLong(),anyLong());
     }
 
+    @Test
+    void createReviewSuccessCreatesReviewPlanReminders() {
+        UserContext.setUserId(1L);
+        TodoReviewDTO dto = new TodoReviewDTO();
+        dto.setTitle("review");
+        dto.setContent("content");
+        when(todoReviewMapper.insert(any(TodoReview.class))).thenAnswer(invocation -> {
+            TodoReview review = invocation.getArgument(0);
+            review.setId(1L);
+            return 1;
+        });
+        when(todoReviewplanMapper.insert(any(TodoReviewplan.class))).thenAnswer(invocation -> {
+            TodoReviewplan plan = invocation.getArgument(0);
+            plan.setId(1L);
+            return 1;
+        });
+
+        todoReviewService.createReview(dto);
+
+        verify(todoReminderService, times(6)).createReminder(argThat(reminder ->
+                "review".equals(reminder.getTargetType())
+                        && Long.valueOf(1L).equals(reminder.getTargetId())
+                        && "desktop".equals(reminder.getChannel())
+        ));
+    }
+
+    @Test
+    void finishReviewPlanSuccessCancelsReminder() {
+        UserContext.setUserId(1L);
+        when(todoReviewplanMapper.finish(anyLong(), anyLong())).thenReturn(1);
+
+        todoReviewService.finishReviewPlan(1L);
+
+        verify(todoReminderService).cancelByTarget(1L, "review", 1L);
+    }
 }

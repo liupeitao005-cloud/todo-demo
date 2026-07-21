@@ -9,7 +9,7 @@ export const backlogApi = {
   create: (data) => http.post("/backlog/create", data),
   update: (data) => http.put("/backlog/update", data),
   move: (data) => http.post("/backlog/move", data),
-  remove: (id) => http.post("/backlog/delete", { id }),
+  remove: (id) => http.delete("/backlog/delete", { data: { id } }),
   list: () => http.get("/backlog/select")
 };
 
