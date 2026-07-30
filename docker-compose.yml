@@ -23,5 +23,73 @@ services:
       timeout: 5s
       retries: 5
 
+  mysql-init-xxl-job:
+    image: mysql:8.0
+    container_name: todo-mysql-init-xxl-job
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./src/main/resources/db/xxl-job.sql:/sql/xxl-job.sql:ro
+    command: ["sh", "-c", "mysql -h mysql -uroot -p123456 < /sql/xxl-job.sql"]
+    restart: "no"
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: todo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - todo_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: todo-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: todo
+      RABBITMQ_DEFAULT_PASS: 123456
+      TZ: Asia/Shanghai
+    volumes:
+      - todo_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  xxl-job-admin:
+    image: xuxueli/xxl-job-admin:2.4.1
+    container_name: todo-xxl-job-admin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mysql-init-xxl-job:
+        condition: service_completed_successfully
+    ports:
+      - "8088:8080"
+    environment:
+      PARAMS: >-
+        --spring.datasource.url=jdbc:mysql://mysql:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+        --spring.datasource.username=root
+        --spring.datasource.password=123456
+        --xxl.job.accessToken=default_token
+    volumes:
+      - todo_xxl_job_logs:/data/applogs
+
 volumes:
   todo_mysql_data:
+  todo_redis_data:
+  todo_rabbitmq_data:
+  todo_xxl_job_logs:

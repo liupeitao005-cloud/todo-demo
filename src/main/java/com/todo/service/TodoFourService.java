@@ -15,7 +15,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class TodoFourService {
+public class  TodoFourService {
     private final TodoTaskMapper todoTaskMapper;
     private final TodoFourMapper todoFourMapper;
 
@@ -52,7 +52,6 @@ public class TodoFourService {
         if (dto == null) return Result.fail("请求参数不能为空");
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-
         TodoFour four = new TodoFour();
         four.setUserId(userId);
         four.setImportance(dto.getImportance());
@@ -63,7 +62,6 @@ public class TodoFourService {
     public Result<String> deleteTodoFour(Long id) {
         Long userId = UserContext.getUserId();
         if (userId == null) return Result.fail("未登录");
-
         TodoFour four = new TodoFour();
         four.setId(id);
         four.setUserId(userId);

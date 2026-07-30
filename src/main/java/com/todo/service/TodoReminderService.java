@@ -9,14 +9,17 @@ import com.todo.mapper.TodoReminderMapper;
 import com.todo.mapper.TodoReviewplanMapper;
 import com.todo.mapper.TodoScheduleMapper;
 import com.todo.mapper.TodoTaskMapper;
+import com.todo.mq.ReminderProducer;
 import com.todo.util.Result;
 import com.todo.util.UserContext;
 import com.todo.vo.TodoReminderVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +32,8 @@ public class TodoReminderService {
     private final TodoTaskMapper todoTaskMapper;
     private final TodoScheduleMapper todoScheduleMapper;
     private final TodoReviewplanMapper todoReviewplanMapper;
+    private final ReminderProducer reminderProducer;
+    private final StringRedisTemplate stringRedisTemplate;
 
     public Result<String> createReminder(TodoReminderDTO dto) {
         if (dto == null) return Result.fail("请求参数不能为空");
@@ -201,6 +206,63 @@ public class TodoReminderService {
         }
         return processedCount;
     }
+
+    public int publishDueServerReminders() {
+        List<TodoReminder> reminders = todoReminderMapper.selectDueAll();
+        int publishedCount = 0;
+        for (TodoReminder reminder : reminders) {
+            if (isClientDeliveredChannel(reminder.getChannel())) {
+                continue;
+            }
+            reminderProducer.send(reminder.getId());
+            publishedCount++;
+        }
+        return publishedCount;
+    }
+
+    public boolean processServerReminderById(Long reminderId) {
+        if (reminderId == null) {
+            return false;
+        }
+        String doneKey = "todo:reminder:done:" + reminderId;
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(doneKey))) {
+            log.info("Reminder message skipped because it was already processed. reminderId={}", reminderId);
+            return false;
+        }
+        String processingKey = "todo:reminder:processing:" + reminderId;
+        Boolean locked = stringRedisTemplate.opsForValue()
+                .setIfAbsent(processingKey, "1", Duration.ofMinutes(10));
+        if (!Boolean.TRUE.equals(locked)) {
+            log.info("Reminder message skipped because it is being processed. reminderId={}", reminderId);
+            return false;
+        }
+        TodoReminder reminder = todoReminderMapper.selectByIdOnly(reminderId);
+        boolean processedSuccessfully = false;
+        try {
+            if (reminder == null) {
+                log.warn("Reminder message ignored because reminder does not exist. reminderId={}", reminderId);
+                return false;
+            }
+            if (reminder.getIsSent() != null && reminder.getIsSent() == 1) {
+                stringRedisTemplate.opsForValue().set(doneKey, "1", Duration.ofDays(1));
+                return false;
+            }
+            if (isClientDeliveredChannel(reminder.getChannel())) {
+                return false;
+            }
+            if (sendServerReminder(reminder) && todoReminderMapper.update(reminder) > 0) {
+                stringRedisTemplate.opsForValue().set(doneKey, "1", Duration.ofDays(1));
+                processedSuccessfully = true;
+                return true;
+            }
+            return false;
+        } finally {
+            if (!processedSuccessfully) {
+                stringRedisTemplate.delete(processingKey);
+            }
+        }
+    }
+
     private boolean isClientDeliveredChannel(String channel) {
         return "desktop".equals(channel) || "app".equals(channel);
     }

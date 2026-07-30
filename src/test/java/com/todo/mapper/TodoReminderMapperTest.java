@@ -42,6 +42,25 @@ public class TodoReminderMapperTest extends MapperTestBase {
     }
 
     @Test
+    void selectPendingDedupesSameTarget() {
+        Long userId = createUser();
+        TodoReminder first = newReminder(userId);
+        TodoReminder second = newReminder(userId);
+        second.setTitle("新的任务提醒");
+        todoReminderMapper.insert(first);
+        todoReminderMapper.insert(second);
+
+        TodoReminder query = new TodoReminder();
+        query.setUserId(userId);
+        query.setChannel("desktop");
+        List<TodoReminderVO> result = todoReminderMapper.selectPending(query);
+
+        assertEquals(1, result.size());
+        assertEquals(second.getId(), result.get(0).getId());
+        assertEquals("新的任务提醒", result.get(0).getTitle());
+    }
+
+    @Test
     void updateSuccess() {
         Long userId = createUser();
         TodoReminder reminder = newReminder(userId);

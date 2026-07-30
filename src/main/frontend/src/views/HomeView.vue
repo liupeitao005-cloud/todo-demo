@@ -189,6 +189,30 @@
             <p v-else class="soft-empty">暂无即将到来的行程。</p>
         </article>
 
+        <article class="dashboard-panel review-panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <span class="panel-icon orange" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15.5H6.8A2.8 2.8 0 0 0 4 21.3Zm0 0A2.8 2.8 0 0 1 6.8 17H20M8 7h8M8 10h6" /></svg>
+                </span>
+                <div>
+                  <h2>今日复习</h2>
+                  <p>今天应处理的复习任务</p>
+                </div>
+              </div>
+            </div>
+            <div v-if="todayReviews.length" class="clean-list">
+              <div v-for="item in todayReviews" :key="item.key" class="clean-item">
+                <span class="kind-dot review"></span>
+                <div>
+                  <strong>{{ item.title }}</strong>
+                  <small>{{ formatReviewMeta(item) }}</small>
+                </div>
+              </div>
+            </div>
+            <p v-else class="soft-empty">今天暂时没有需要处理的复习。</p>
+        </article>
+
         <article class="dashboard-panel habit-panel">
             <div class="panel-head">
               <div class="panel-title">
@@ -293,7 +317,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
-import { backlogApi, habitApi, reminderApi, scheduleApi, taskApi } from "@/api/todoApi";
+import { backlogApi, habitApi, reminderApi, reviewApi, scheduleApi, taskApi } from "@/api/todoApi";
 import { authState } from "@/stores/auth";
 
 const cachedDashboard = readDashboardCache();
@@ -302,7 +326,8 @@ const lists = reactive({
   backlogs: cachedDashboard?.backlogs || [],
   tasks: cachedDashboard?.tasks || [],
   schedules: cachedDashboard?.schedules || [],
-  habits: cachedDashboard?.habits || []
+  habits: cachedDashboard?.habits || [],
+  reviews: cachedDashboard?.reviews || []
 });
 
 const loading = ref(false);
@@ -353,7 +378,7 @@ const todayText = computed(() => {
   const date = new Date();
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 });
-const hasAnyData = computed(() => lists.backlogs.length + lists.tasks.length + lists.schedules.length + lists.habits.length > 0);
+const hasAnyData = computed(() => lists.backlogs.length + lists.tasks.length + lists.schedules.length + lists.habits.length + lists.reviews.length > 0);
 const currentCreateLabel = computed(() => createTypes.find((item) => item.value === selectedType.value)?.label || "创建");
 
 const reminderBadgeText = computed(() => pendingReminders.value.length > 99 ? "99+" : String(pendingReminders.value.length));
@@ -396,6 +421,17 @@ const todayHabits = computed(() => {
   }));
 });
 
+const todayReviews = computed(() => {
+  return lists.reviews
+    .filter((item) => !Number(item.isFinish) && isDueTodayOrOverdue(item.reviewTime))
+    .sort((a, b) => parseDate(a.reviewTime) - parseDate(b.reviewTime))
+    .map((item, index) => ({
+      ...item,
+      key: `review-${item.id || index}`,
+      title: item.title || `复习任务 ${item.reviewTaskId || ""}`.trim() || "未命名复习"
+    }));
+});
+
 function parseDate(value) {
   if (!value) return new Date(0);
   return new Date(String(value).replace(" ", "T"));
@@ -429,6 +465,11 @@ function taskOverlapsToday(task) {
   return start < startOfTomorrow() && finish >= startOfToday();
 }
 
+function isDueTodayOrOverdue(value) {
+  if (!value) return false;
+  return parseDate(value) < startOfTomorrow();
+}
+
 function formatShortDate(value) {
   if (!value) return "未定";
   const date = parseDate(value);
@@ -443,6 +484,12 @@ function formatTimeRange(start, finish) {
   if (!start && !finish) return "";
   if (!finish) return formatShortDate(start);
   return `${formatShortDate(start)} - ${formatShortDate(finish).slice(6)}`;
+}
+
+function formatReviewMeta(item) {
+  const time = formatShortDate(item.reviewTime);
+  const prefix = parseDate(item.reviewTime) < startOfToday() ? "已逾期" : time;
+  return `${prefix} · ${item.content || "复习计划"}`;
 }
 
 function reminderTypeLabel(type) {
@@ -467,7 +514,7 @@ async function loadPendingReminders(options = {}) {
   reminderLoading = true;
   try {
     const data = await reminderApi.pending();
-    const reminders = Array.isArray(data?.data) ? data.data : [];
+    const reminders = dedupeReminders(Array.isArray(data?.data) ? data.data : []);
     pendingReminders.value = reminders;
     if (options.notify !== false) notifyDueReminders(reminders);
   } catch {
@@ -477,7 +524,7 @@ async function loadPendingReminders(options = {}) {
   }
 }
 
-function notifyDueReminders(reminders) {
+async function notifyDueReminders(reminders) {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   for (const reminder of reminders) {
     if (!reminder?.id || notifiedReminderIds.has(reminder.id)) continue;
@@ -485,7 +532,25 @@ function notifyDueReminders(reminders) {
     new Notification(reminder.title || "Todo 提醒", {
       body: reminder.content || "你有一条到期提醒"
     });
+    try {
+      await reminderApi.read(reminder.id);
+      pendingReminders.value = pendingReminders.value.filter((item) => item.id !== reminder.id);
+    } catch {
+      // 通知已经弹出，本轮不再重复提醒。
+    }
   }
+}
+
+function dedupeReminders(reminders) {
+  const map = new Map();
+  for (const reminder of reminders) {
+    if (!reminder) continue;
+    const key = reminder.targetType && reminder.targetId
+      ? `${reminder.targetType}:${reminder.targetId}:${reminder.channel || "desktop"}`
+      : `id:${reminder.id}`;
+    if (!map.has(key)) map.set(key, reminder);
+  }
+  return [...map.values()];
 }
 
 async function requestNotificationPermission() {
@@ -632,20 +697,22 @@ async function submitCreate() {
 async function loadDashboard(options = {}) {
   loading.value = true;
   if (!options.silent) loadError.value = "";
-  const [backlogResult, taskResult, scheduleResult, habitResult] = await Promise.allSettled([
+  const [backlogResult, taskResult, scheduleResult, habitResult, reviewResult] = await Promise.allSettled([
     backlogApi.list(),
     taskApi.list(),
     scheduleApi.list(),
-    habitApi.list()
+    habitApi.list(),
+    reviewApi.list()
   ]);
 
   if (backlogResult.status === "fulfilled") lists.backlogs = Array.isArray(backlogResult.value?.data) ? backlogResult.value.data : [];
   if (taskResult.status === "fulfilled") lists.tasks = Array.isArray(taskResult.value?.data) ? taskResult.value.data : [];
   if (scheduleResult.status === "fulfilled") lists.schedules = Array.isArray(scheduleResult.value?.data) ? scheduleResult.value.data : [];
   if (habitResult.status === "fulfilled") lists.habits = Array.isArray(habitResult.value?.data) ? habitResult.value.data : [];
+  if (reviewResult.status === "fulfilled") lists.reviews = Array.isArray(reviewResult.value?.data) ? reviewResult.value.data : [];
   cacheDashboard();
 
-  const failed = [backlogResult, taskResult, scheduleResult, habitResult].some((item) => item.status === "rejected");
+  const failed = [backlogResult, taskResult, scheduleResult, habitResult, reviewResult].some((item) => item.status === "rejected");
   if (failed && !options.silent) loadError.value = "部分数据暂时加载失败，请稍后刷新页面。";
   loading.value = false;
   initialLoading.value = false;
@@ -671,7 +738,8 @@ function readDashboardCache() {
       backlogs: Array.isArray(cached.backlogs) ? cached.backlogs : [],
       tasks: Array.isArray(cached.tasks) ? cached.tasks : [],
       schedules: Array.isArray(cached.schedules) ? cached.schedules : [],
-      habits: Array.isArray(cached.habits) ? cached.habits : []
+      habits: Array.isArray(cached.habits) ? cached.habits : [],
+      reviews: Array.isArray(cached.reviews) ? cached.reviews : []
     };
   } catch {
     return null;
@@ -683,7 +751,8 @@ function cacheDashboard() {
     backlogs: lists.backlogs,
     tasks: lists.tasks,
     schedules: lists.schedules,
-    habits: lists.habits
+    habits: lists.habits,
+    reviews: lists.reviews
   }));
 }
 </script>
@@ -1267,7 +1336,8 @@ function cacheDashboard() {
   grid-template-columns: minmax(420px, 1.15fr) minmax(360px, .85fr);
   grid-template-areas:
     "todo schedule"
-    "task habit";
+    "task review"
+    "habit review";
   gap: 22px;
   align-items: stretch;
 }
@@ -1287,6 +1357,7 @@ function cacheDashboard() {
 .task-panel { grid-area: task; }
 .schedule-panel { grid-area: schedule; }
 .habit-panel { grid-area: habit; }
+.review-panel { grid-area: review; }
 
 .todo-panel,
 .schedule-panel {
@@ -1294,7 +1365,8 @@ function cacheDashboard() {
 }
 
 .task-panel,
-.habit-panel {
+.habit-panel,
+.review-panel {
   min-height: 182px;
 }
 
@@ -1344,6 +1416,11 @@ function cacheDashboard() {
 .panel-icon.green {
   color: #25b86f;
   background: #eaf9f1;
+}
+
+.panel-icon.orange {
+  color: #f59e0b;
+  background: #fff7e8;
 }
 
 .panel-head h2 {
@@ -1411,6 +1488,7 @@ function cacheDashboard() {
 
 .kind-dot.task { background: #2f6df6; }
 .kind-dot.backlog { background: #35c47a; }
+.kind-dot.review { background: #f59e0b; }
 
 .schedule-card time {
   display: grid;
@@ -1613,12 +1691,14 @@ function cacheDashboard() {
       "todo"
       "task"
       "schedule"
+      "review"
       "habit";
   }
 
   .todo-panel,
   .schedule-panel,
   .task-panel,
+  .review-panel,
   .habit-panel {
     min-height: 0;
   }

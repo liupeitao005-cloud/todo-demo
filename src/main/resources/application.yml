@@ -9,6 +9,18 @@ spring:
     url: jdbc:mysql://localhost:3306/todo_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:123456}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      timeout: 3s
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
 
 mybatis:
   configuration:
@@ -19,6 +31,26 @@ jwt:
   expire-hours: 24
 
 todo:
+  mq:
+    test:
+      exchange: todo.test.exchange
+      queue: todo.test.queue
+      routing-key: todo.test.routing
+    reminder:
+      exchange: todo.reminder.exchange
+      queue: todo.reminder.queue
+      routing-key: todo.reminder.due
+  xxl-job:
+    admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:8088/xxl-job-admin}
+    access-token: ${XXL_JOB_ACCESS_TOKEN:default_token}
+    executor:
+      app-name: ${XXL_JOB_EXECUTOR_APP_NAME:todo-executor}
+      address: ${XXL_JOB_EXECUTOR_ADDRESS:}
+      ip: ${XXL_JOB_EXECUTOR_IP:}
+      port: ${XXL_JOB_EXECUTOR_PORT:9999}
+      log-path: ${XXL_JOB_EXECUTOR_LOG_PATH:logs/xxl-job}
+      log-retention-days: ${XXL_JOB_EXECUTOR_LOG_RETENTION_DAYS:30}
   reminder:
+    scheduler-enabled: false
     initial-delay-ms: 5000
     scan-delay-ms: 60000
