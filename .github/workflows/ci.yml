@@ -21,7 +21,12 @@ jobs:
           cache: maven
 
       - name: Run backend tests
-        run: mvn test
+        run: |
+          mvn test || {
+            echo "==== Surefire reports ===="
+            find target/surefire-reports -type f -name "*.txt" -print -exec cat {} \;
+            exit 1
+          }
 
   frontend:
     name: Frontend Tests And Build
