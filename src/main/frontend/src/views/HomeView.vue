@@ -439,15 +439,6 @@ function parseDate(value) {
   return new Date(String(value).replace(" ", "T"));
 }
 
-function dateKey(value) {
-  const date = parseDate(value);
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-}
-
-function isToday(value) {
-  return value && dateKey(value) === dateKey(new Date());
-}
-
 function startOfToday() {
   const date = new Date();
   date.setHours(0, 0, 0, 0);

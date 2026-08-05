@@ -107,7 +107,7 @@ async function check(options = {}) {
   if (checking) return;
   checking = true;
   const silent = options?.silent === true;
-  let data = null;
+  let data;
   try {
     data = silent ? await reminderApi.pending() : await run(() => reminderApi.pending());
   } catch {
