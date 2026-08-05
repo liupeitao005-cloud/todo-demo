@@ -247,6 +247,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { taskApi } from "@/api/todoApi";
 import { useRequest } from "@/composables/useRequest";
+import { removeUserCache } from "@/utils/userCache";
 
 const tasks = ref([]);
 const selectedId = ref(null);
@@ -467,7 +468,7 @@ function payload() {
 }
 
 function applyTaskList(list) {
-  sessionStorage.removeItem("todo-home-dashboard");
+  removeUserCache("home-dashboard");
   tasks.value = [...list].sort((a, b) => {
     const aDone = isFinished(a) ? 1 : 0;
     const bDone = isFinished(b) ? 1 : 0;

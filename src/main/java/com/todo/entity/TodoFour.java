@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class TodoFour {
     private Long id;
     private Long userId;
+    private Long taskId;
     private String title;
     private String content;
     private Integer importance;

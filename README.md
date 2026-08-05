@@ -135,30 +135,46 @@ src/main/resources/db/demo-data.sql
 
 第一次运行前，先执行 `schema.sql` 创建表，再执行 `demo-data.sql` 插入演示数据。
 
-如果本机安装了 Docker，也可以直接用 Docker Compose 启动 MySQL：
+如果本机安装了 Docker，也可以直接用 Docker Compose 启动 MySQL、Redis、RabbitMQ 和 XXL-JOB：
 
 ```bash
 docker compose up -d
 ```
 
-项目根目录的 `docker-compose.yml` 会启动一个 MySQL 8 容器：
+项目根目录的 `docker-compose.yml` 会启动学习本项目需要的中间件：
 
 ```text
-容器名：todo-mysql
-数据库：todo_db
-用户名：root
-密码：123456
-端口：3306
+MySQL：localhost:3306
+  数据库：todo_db
+  用户名：root
+  密码：123456
+
+Redis：localhost:6379
+
+RabbitMQ：localhost:5672
+  管理页面：http://localhost:15672
+  用户名：todo
+  密码：123456
+
+XXL-JOB Admin：http://localhost:8088/xxl-job-admin
+  用户名：admin
+  密码：123456
+  执行器：todo-executor
+  预置任务：扫描到期提醒（scanDueReminderJob，每 1 分钟执行一次）
 ```
+
+应用默认配置已经和 Docker Compose 对齐，不设置环境变量也能连接这些中间件。
+如果要改密码，可以统一使用 `MYSQL_DATABASE`、`MYSQL_PASSWORD`、`RABBITMQ_USERNAME`、`RABBITMQ_PASSWORD` 等环境变量。
 
 第一次启动容器时，会自动执行：
 
 ```text
 src/main/resources/db/schema.sql
 src/main/resources/db/demo-data.sql
+src/main/resources/db/xxl-job.sql
 ```
 
-注意：MySQL 官方镜像只会在数据库目录第一次初始化时执行这些 SQL。也就是说，如果容器和数据卷已经存在，后面修改 SQL 文件不会自动重新执行。
+注意：MySQL 官方镜像只会在数据库目录第一次初始化时执行 `schema.sql` 和 `demo-data.sql`。如果容器和数据卷已经存在，后面修改这两个 SQL 文件不会自动重新执行。`xxl-job.sql` 由 `mysql-init-xxl-job` 初始化容器执行，用于创建 XXL-JOB 库、执行器和提醒扫描任务。
 
 
 
@@ -454,10 +470,8 @@ GET  /four/select                 查询四象限
 POST /review/create               创建复习计划
 PUT  /review/finish               完成复习
 GET  /review/plans                查询复习计划列表
-POST /reminder/create             创建提醒
-GET  /reminder/pending            查询未读提醒
-GET  /reminder/app/pending        查询 App 未读提醒
-GET  /reminder/telegramBot/pending 查询 Telegram 未读提醒
+POST /reminder/create             创建提醒（任务、行程、复习计划创建时自动生成）
+GET  /reminder/pending            查询桌面端到期提醒
 PUT  /reminder/read               标记提醒已读
 ```
 
@@ -466,7 +480,7 @@ PUT  /reminder/read               标记提醒已读
 演示流程：
 
 ```text
-注册 -> 登录 -> 创建待办 -> 安排任务 -> 日历查看 -> 设置提醒 -> 完成任务
+注册 -> 登录 -> 创建待办 -> 安排任务 -> 系统自动生成提前 5 分钟提醒 -> 日历查看 -> 首页铃铛查看提醒 -> 完成任务
 ```
 
 具体步骤：
@@ -476,15 +490,16 @@ PUT  /reminder/read               标记提醒已读
 2. 回到登录页，使用刚注册的账号登录，登录成功后进入系统首页。
 3. 进入待办箱，创建一条待办，例如“准备项目演示”。
 4. 在待办箱中选择该待办，填写开始时间和结束时间，将待办安排为任务。
-5. 进入日历页面，选择对应日期，查看刚安排的任务是否出现在日历中。
-6. 进入提醒页面，为该任务设置提醒时间和提醒方式。
-7. 回到任务页面，找到该任务，点击完成，验证任务状态已更新。
+5. 系统会根据任务开始时间自动生成提前 5 分钟的桌面端提醒。
+6. 进入日历页面，选择对应日期，查看刚安排的任务是否出现在日历中。
+7. 提醒到期后，在首页右上角铃铛查看提醒，并可点击提醒或“全部已读”标记已读。
+8. 回到任务页面，找到该任务，点击完成，验证任务状态已更新。
 ```
 
 演示重点：
 
 ```text
-这条路径可以完整展示用户登录认证、待办管理、任务安排、日历聚合查询、提醒设置和任务完成的核心业务闭环。
+这条路径可以完整展示用户登录认证、待办管理、任务安排、提前 5 分钟自动提醒、首页提醒查看、日历聚合查询和任务完成的核心业务闭环。
 ```
 
 ## 18. 常用命令

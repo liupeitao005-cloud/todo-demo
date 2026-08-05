@@ -116,8 +116,9 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { backlogApi } from "@/api/todoApi";
 import { useRequest } from "@/composables/useRequest";
+import { userCacheKey } from "@/utils/userCache";
 
-const CACHE_KEY = "todo-backlog-list";
+const CACHE_KEY = userCacheKey("backlog-list");
 const cachedState = readCache();
 const items = ref(cachedState.items);
 const hasLoaded = ref(cachedState.loaded);

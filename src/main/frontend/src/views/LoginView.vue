@@ -31,7 +31,7 @@
           <span>●</span>
           <div>
             <strong>智能提醒</strong>
-            <p>多种方式提醒，不错过重要事项</p>
+            <p>桌面提醒，不错过重要事项</p>
           </div>
         </article>
       </div>

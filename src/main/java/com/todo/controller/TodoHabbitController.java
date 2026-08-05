@@ -1,7 +1,9 @@
 package com.todo.controller;
 
 
+import com.todo.dto.TodoHabbitCheckDTO;
 import com.todo.dto.TodoHabbitDTO;
+import com.todo.entity.TodoHabbitCheck;
 import com.todo.entity.TodoHabbit;
 import com.todo.service.TodoHabbitService;
 import com.todo.util.Result;
@@ -33,5 +35,17 @@ public class TodoHabbitController {
     @GetMapping("/select")
     public  Result<List<TodoHabbit>> list(){
         return  todoHabbitService.listHabbit();
+    }
+
+    @Operation(summary = "查询习惯打卡记录")
+    @GetMapping("/checks")
+    public Result<List<TodoHabbitCheck>> checks(TodoHabbitCheckDTO dto) {
+        return todoHabbitService.listChecks(dto);
+    }
+
+    @Operation(summary = "切换习惯打卡状态")
+    @PutMapping("/check/toggle")
+    public Result<String> toggleCheck(@Validated(ValidationGroups.Update.class) @RequestBody TodoHabbitCheckDTO dto) {
+        return todoHabbitService.toggleCheck(dto);
     }
 }

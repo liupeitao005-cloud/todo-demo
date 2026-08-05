@@ -319,7 +319,9 @@
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { backlogApi, habitApi, reminderApi, reviewApi, scheduleApi, taskApi } from "@/api/todoApi";
 import { authState } from "@/stores/auth";
+import { userCacheKey } from "@/utils/userCache";
 
+const DASHBOARD_CACHE_KEY = userCacheKey("home-dashboard");
 const cachedDashboard = readDashboardCache();
 const REMINDER_POLL_MS = 30000;
 const lists = reactive({
@@ -732,7 +734,7 @@ onUnmounted(() => {
 
 function readDashboardCache() {
   try {
-    const cached = JSON.parse(sessionStorage.getItem("todo-home-dashboard") || "null");
+    const cached = JSON.parse(sessionStorage.getItem(DASHBOARD_CACHE_KEY) || "null");
     if (!cached) return false;
     return {
       backlogs: Array.isArray(cached.backlogs) ? cached.backlogs : [],
@@ -747,7 +749,7 @@ function readDashboardCache() {
 }
 
 function cacheDashboard() {
-  sessionStorage.setItem("todo-home-dashboard", JSON.stringify({
+  sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
     backlogs: lists.backlogs,
     tasks: lists.tasks,
     schedules: lists.schedules,

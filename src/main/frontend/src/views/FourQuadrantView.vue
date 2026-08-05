@@ -254,15 +254,15 @@ const selectedItem = computed(() => {
   if (!selectedQuadrant.value) return null;
   return quadrantItemsRaw(selectedQuadrant.value).find((item) => item.id === selectedId.value) || null;
 });
-const placedTaskSignatures = computed(() => {
-  return new Set(quadrants.flatMap((quadrant) => quadrantItemsRaw(quadrant).map((item) => taskSignature(item))));
+const placedTaskIds = computed(() => {
+  return new Set(quadrants.flatMap((quadrant) => quadrantItemsRaw(quadrant).map((item) => taskIdentity(item))));
 });
 
 const filteredAvailableTasks = computed(() => {
   const term = taskKeyword.value.toLowerCase();
   return availableTasks.value
     .filter((task) => !Number(task.parentId || 0))
-    .filter((task) => !placedTaskSignatures.value.has(taskSignature(task)))
+    .filter((task) => !placedTaskIds.value.has(taskIdentity(task)))
     .filter((task) => {
       if (!term) return true;
       return [task.title, task.content, task.id].some((value) => String(value || "").toLowerCase().includes(term));
@@ -299,17 +299,8 @@ function formatTime(value) {
   return String(value).replace("T", " ").slice(0, 16);
 }
 
-function normalizeDateTime(value) {
-  return value ? String(value).replace(" ", "T").slice(0, 16) : "";
-}
-
-function taskSignature(item) {
-  return [
-    item?.title || "",
-    item?.content || "",
-    normalizeDateTime(item?.startTime),
-    normalizeDateTime(item?.finishTime)
-  ].join("|");
+function taskIdentity(item) {
+  return String(item?.taskId ?? item?.id ?? "");
 }
 
 function normalizeTaskType(value) {

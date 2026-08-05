@@ -113,6 +113,69 @@ CREATE TABLE IF NOT EXISTS xxl_job_lock (
 INSERT IGNORE INTO xxl_job_group (id, app_name, title, address_type, address_list, update_time)
 VALUES (1, 'todo-executor', 'todo', 0, NULL, NOW());
 
+INSERT INTO xxl_job_info (
+  id,
+  job_group,
+  job_desc,
+  add_time,
+  update_time,
+  author,
+  schedule_type,
+  schedule_conf,
+  misfire_strategy,
+  executor_route_strategy,
+  executor_handler,
+  executor_param,
+  executor_block_strategy,
+  executor_timeout,
+  executor_fail_retry_count,
+  glue_type,
+  glue_remark,
+  glue_updatetime,
+  trigger_status,
+  trigger_last_time,
+  trigger_next_time
+) VALUES (
+  1,
+  1,
+  '扫描到期提醒',
+  NOW(),
+  NOW(),
+  'todo',
+  'CRON',
+  '0 0/1 * * * ?',
+  'DO_NOTHING',
+  'FIRST',
+  'scanDueReminderJob',
+  '',
+  'SERIAL_EXECUTION',
+  0,
+  0,
+  'BEAN',
+  'GLUE代码初始化',
+  NOW(),
+  1,
+  0,
+  0
+) ON DUPLICATE KEY UPDATE
+  job_group = VALUES(job_group),
+  job_desc = VALUES(job_desc),
+  update_time = NOW(),
+  author = VALUES(author),
+  schedule_type = VALUES(schedule_type),
+  schedule_conf = VALUES(schedule_conf),
+  misfire_strategy = VALUES(misfire_strategy),
+  executor_route_strategy = VALUES(executor_route_strategy),
+  executor_handler = VALUES(executor_handler),
+  executor_param = VALUES(executor_param),
+  executor_block_strategy = VALUES(executor_block_strategy),
+  executor_timeout = VALUES(executor_timeout),
+  executor_fail_retry_count = VALUES(executor_fail_retry_count),
+  glue_type = VALUES(glue_type),
+  glue_remark = VALUES(glue_remark),
+  glue_updatetime = NOW(),
+  trigger_status = VALUES(trigger_status);
+
 INSERT IGNORE INTO xxl_job_user (id, username, password, role, permission)
 VALUES (1, 'admin', 'e10adc3949ba59abbe56e057f20f883e', 1, NULL);
 

@@ -87,9 +87,10 @@ VALUES (
 -- 对应功能：四象限管理。
 -- importance：重要性，urgency：紧急性。
 INSERT INTO todo_four(
-  user_id, title, content, importance, urgency,start_time, finish_time, create_time, update_time)
+  user_id, task_id, title, content, importance, urgency,start_time, finish_time, create_time, update_time)
 VALUES (
   @demo_user_id,
+  @task_id,
   '优化 README 说明',
   '让别人更容易看懂项目启动流程。',
   1,

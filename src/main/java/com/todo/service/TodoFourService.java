@@ -35,13 +35,14 @@ public class  TodoFourService {
 
         TodoFour todoFour = new TodoFour();
         todoFour.setUserId(userId);
+        todoFour.setTaskId(task.getId());
         todoFour.setTitle(task.getTitle());
         todoFour.setContent(task.getContent());
         todoFour.setImportance(dto.getImportance());
         todoFour.setUrgency(dto.getUrgency());
         todoFour.setStartTime(task.getStartTime());
         todoFour.setFinishTime(task.getFinishTime());
-        int updated = todoFourMapper.updateQuadrantBySnapshot(todoFour);
+        int updated = todoFourMapper.updateQuadrantByTaskId(todoFour);
         if (updated <= 0) {
             todoFourMapper.insert(todoFour);
         }

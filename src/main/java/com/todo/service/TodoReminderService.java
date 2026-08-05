@@ -60,14 +60,6 @@ public class TodoReminderService {
 
         return pendingReminderByChannel("desktop");
     }
-    public Result<List<TodoReminderVO>> pendingAppReminder() {
-
-        return pendingReminderByChannel("app");
-    }
-    public Result<List<TodoReminderVO>> pendingTelegramBotReminder() {
-
-        return pendingReminderByChannel("telegramBot");
-    }
 
     public Result<List<TodoReminder>> listReminder() {
         Long userId = UserContext.getUserId();
@@ -262,17 +254,11 @@ public class TodoReminderService {
             }
         }
     }
-
     private boolean isClientDeliveredChannel(String channel) {
-        return "desktop".equals(channel) || "app".equals(channel);
+        return "desktop".equals(channel);
     }
 
     private boolean sendServerReminder(TodoReminder reminder) {
-        if ("telegramBot".equals(reminder.getChannel())) {
-            log.info("Telegram reminder due. userId={}, reminderId={}, title={}",
-                    reminder.getUserId(), reminder.getId(), reminder.getTitle());
-            return true;
-        }
         log.warn("Unsupported reminder channel. reminderId={}, channel={}",
                 reminder.getId(), reminder.getChannel());
         return false;

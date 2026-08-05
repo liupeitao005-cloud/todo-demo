@@ -16,7 +16,7 @@ public interface TodoReminderMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(TodoReminder reminder);
 
-    @Select("SELECT r.id, r.target_type, r.target_id, r.title, r.content, r.remind_time, r.channel FROM todo_reminder r INNER JOIN (SELECT MAX(id) AS id FROM todo_reminder WHERE user_id=#{userId} AND channel=#{channel} AND is_sent=0 AND remind_time BETWEEN DATE_SUB(NOW(), INTERVAL 15 MINUTE) AND NOW() GROUP BY user_id, target_type, target_id, channel) latest ON latest.id = r.id ORDER BY r.remind_time ASC")
+    @Select("SELECT r.id, r.target_type, r.target_id, r.title, r.content, r.remind_time, r.channel FROM todo_reminder r INNER JOIN (SELECT MAX(id) AS id FROM todo_reminder WHERE user_id=#{userId} AND channel=#{channel} AND is_sent=0 AND remind_time BETWEEN DATE_SUB(NOW(), INTERVAL '15' MINUTE) AND NOW() GROUP BY user_id, target_type, target_id, channel) latest ON latest.id = r.id ORDER BY r.remind_time ASC")
     List<TodoReminderVO> selectPending(TodoReminder reminder);
 
     @Select("SELECT id,user_id,target_type,target_id,title,content,remind_time,channel,is_sent,create_time,update_time FROM todo_reminder WHERE user_id=#{userId} ORDER BY remind_time DESC, id DESC")

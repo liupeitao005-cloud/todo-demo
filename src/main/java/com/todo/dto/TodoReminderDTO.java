@@ -8,7 +8,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class TodoReminderDTO {
+public class
+TodoReminderDTO {
     @NotNull(message = "提醒ID不能为空", groups = ValidationGroups.IdRequired.class)
     private Long id;
 

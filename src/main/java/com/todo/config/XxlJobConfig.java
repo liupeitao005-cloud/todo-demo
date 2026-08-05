@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableConfigurationProperties(XxlJobProperties.class)
@@ -17,17 +18,44 @@ public class XxlJobConfig {
     @Bean
     public XxlJobSpringExecutor xxlJobExecutor() {
         XxlJobProperties.Executor executorProperties = properties.getExecutor();
+        String adminAddresses = textOrDefault(
+                properties.getAdminAddresses(),
+                XxlJobProperties.DEFAULT_ADMIN_ADDRESSES
+        );
+        String accessToken = textOrDefault(
+                properties.getAccessToken(),
+                XxlJobProperties.DEFAULT_ACCESS_TOKEN
+        );
+        String appName = textOrDefault(
+                executorProperties.getAppName(),
+                XxlJobProperties.DEFAULT_EXECUTOR_APP_NAME
+        );
+        int port = executorProperties.getPort() > 0
+                ? executorProperties.getPort()
+                : XxlJobProperties.DEFAULT_EXECUTOR_PORT;
+        String logPath = textOrDefault(
+                executorProperties.getLogPath(),
+                XxlJobProperties.DEFAULT_EXECUTOR_LOG_PATH
+        );
+        int logRetentionDays = executorProperties.getLogRetentionDays() > 0
+                ? executorProperties.getLogRetentionDays()
+                : XxlJobProperties.DEFAULT_EXECUTOR_LOG_RETENTION_DAYS;
+
         log.info("Initialize XXL-JOB executor. adminAddresses={}, appName={}, port={}",
-                properties.getAdminAddresses(), executorProperties.getAppName(), executorProperties.getPort());
+                adminAddresses, appName, port);
         XxlJobSpringExecutor executor = new XxlJobSpringExecutor();
-        executor.setAdminAddresses(properties.getAdminAddresses());
-        executor.setAppname(executorProperties.getAppName());
+        executor.setAdminAddresses(adminAddresses);
+        executor.setAppname(appName);
         executor.setAddress(executorProperties.getAddress());
         executor.setIp(executorProperties.getIp());
-        executor.setPort(executorProperties.getPort());
-        executor.setAccessToken(properties.getAccessToken());
-        executor.setLogPath(executorProperties.getLogPath());
-        executor.setLogRetentionDays(executorProperties.getLogRetentionDays());
+        executor.setPort(port);
+        executor.setAccessToken(accessToken);
+        executor.setLogPath(logPath);
+        executor.setLogRetentionDays(logRetentionDays);
         return executor;
+    }
+
+    private String textOrDefault(String value, String defaultValue) {
+        return StringUtils.hasText(value) ? value : defaultValue;
     }
 }

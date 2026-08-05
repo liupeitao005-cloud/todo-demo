@@ -1,4 +1,5 @@
 import { reactive } from "vue";
+import { clearTodoUserCaches } from "@/utils/userCache";
 
 const TOKEN_KEY = "todo-token";
 const USERNAME_KEY = "todo-username";
@@ -25,6 +26,7 @@ export function setUsername(username) {
 }
 
 export function logout() {
+  clearTodoUserCaches();
   setToken("");
   setUsername("");
 }

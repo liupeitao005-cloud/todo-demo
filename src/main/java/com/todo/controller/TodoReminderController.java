@@ -46,18 +46,6 @@ public class TodoReminderController {
         return todoReminderService.pendingDesktopReminder();
     }
 
-    @Operation(summary = "查询 App 到期提醒")
-    @GetMapping("/app/pending")
-    public Result<List<TodoReminderVO>> appPending() {
-        return todoReminderService.pendingAppReminder();
-    }
-
-    @Operation(summary = "查询 Telegram 到期提醒")
-    @GetMapping("/telegramBot/pending")
-    public Result<List<TodoReminderVO>> telegramBotPending() {
-        return todoReminderService.pendingTelegramBotReminder();
-    }
-
     @Operation(summary = "标记提醒已读")
     @PutMapping("/read")
     public Result<String> read(@Validated(ValidationGroups.IdRequired.class) @RequestBody TodoReminderDTO dto) {

@@ -56,7 +56,7 @@ class TodoReminderServiceTest {
         dto.setTargetId(1L);
         dto.setTitle("测试提醒");
         dto.setContent("测试提醒内容");
-        dto.setChannel("app");
+        dto.setChannel("desktop");
         dto.setRemindTime(LocalDateTime.now());
         when(todoReminderMapper.insert(any(TodoReminder.class))).thenReturn(1);
         Result<String> result = todoReminderService.createReminder(dto);
@@ -122,32 +122,23 @@ class TodoReminderServiceTest {
     }
 
     @Test
-    void processDueServerRemindersMarksOnlyServerDeliveredChannels() {
+    void processDueServerRemindersDoesNotMarkClientOrUnsupportedChannels() {
         TodoReminder desktopReminder = new TodoReminder();
         desktopReminder.setId(1L);
         desktopReminder.setUserId(1L);
         desktopReminder.setChannel("desktop");
 
-        TodoReminder appReminder = new TodoReminder();
-        appReminder.setId(2L);
-        appReminder.setUserId(1L);
-        appReminder.setChannel("app");
+        TodoReminder unsupportedReminder = new TodoReminder();
+        unsupportedReminder.setId(2L);
+        unsupportedReminder.setUserId(1L);
+        unsupportedReminder.setChannel("email");
 
-        TodoReminder telegramReminder = new TodoReminder();
-        telegramReminder.setId(3L);
-        telegramReminder.setUserId(1L);
-        telegramReminder.setChannel("telegramBot");
-        telegramReminder.setTitle("test reminder");
-
-        when(todoReminderMapper.selectDueAll()).thenReturn(List.of(desktopReminder, appReminder, telegramReminder));
-        when(todoReminderMapper.update(any(TodoReminder.class))).thenReturn(1);
+        when(todoReminderMapper.selectDueAll()).thenReturn(List.of(desktopReminder, unsupportedReminder));
 
         int count = todoReminderService.processDueServerReminders();
 
-        assertEquals(1, count);
-        verify(todoReminderMapper).update(argThat(reminder -> reminder.getId().equals(3L)));
-        verify(todoReminderMapper, never()).update(argThat(reminder -> reminder.getId().equals(1L)));
-        verify(todoReminderMapper, never()).update(argThat(reminder -> reminder.getId().equals(2L)));
+        assertEquals(0, count);
+        verify(todoReminderMapper, never()).update(any(TodoReminder.class));
     }
 
     @Test

@@ -37,7 +37,9 @@ export const calendarApi = {
 
 export const habitApi = {
   create: (data) => http.post("/habbit/create", data),
-  list: () => http.get("/habbit/select")
+  list: () => http.get("/habbit/select"),
+  checks: (params) => http.get("/habbit/checks", { params }),
+  toggleCheck: (data) => http.put("/habbit/check/toggle", data)
 };
 
 export const fourApi = {

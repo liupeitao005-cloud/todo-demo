@@ -96,12 +96,29 @@ CREATE TABLE IF NOT EXISTS todo_habbit (
   CONSTRAINT fk_todo_habbit_user FOREIGN KEY (user_id) REFERENCES todo_user (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='习惯表';
 
+-- 习惯打卡表
+-- 对应功能：记录某个用户在某一天是否完成某个习惯
+CREATE TABLE IF NOT EXISTS todo_habbit_check (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '习惯打卡ID',
+  user_id BIGINT NOT NULL COMMENT '所属用户ID',
+  habbit_id BIGINT NOT NULL COMMENT '习惯ID',
+  check_date DATE NOT NULL COMMENT '打卡日期',
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_todo_habbit_check_user_habbit_date (user_id, habbit_id, check_date),
+  KEY idx_todo_habbit_check_user_date (user_id, check_date),
+  KEY idx_todo_habbit_check_habbit_id (habbit_id),
+  CONSTRAINT fk_todo_habbit_check_user FOREIGN KEY (user_id) REFERENCES todo_user (id),
+  CONSTRAINT fk_todo_habbit_check_habbit FOREIGN KEY (habbit_id) REFERENCES todo_habbit (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='习惯打卡表';
+
 -- 四象限表
 -- 对应功能：把任务放入四象限、按重要性和紧急性查询四象限内容
 -- importance 表示重要性，urgency 表示紧急性
 CREATE TABLE IF NOT EXISTS todo_four (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '四象限记录ID',
   user_id BIGINT NOT NULL COMMENT '所属用户ID',
+  task_id BIGINT NOT NULL COMMENT '关联任务ID',
   title VARCHAR(128) DEFAULT NULL COMMENT '事项标题',
   content TEXT COMMENT '事项内容',
   importance TINYINT NOT NULL COMMENT '重要性',
@@ -111,8 +128,11 @@ CREATE TABLE IF NOT EXISTS todo_four (
   create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
+  UNIQUE KEY uk_todo_four_user_task (user_id, task_id),
   KEY idx_todo_four_user_quadrant (user_id, importance, urgency),
-  CONSTRAINT fk_todo_four_user FOREIGN KEY (user_id) REFERENCES todo_user (id)
+  KEY idx_todo_four_task_id (task_id),
+  CONSTRAINT fk_todo_four_user FOREIGN KEY (user_id) REFERENCES todo_user (id),
+  CONSTRAINT fk_todo_four_task FOREIGN KEY (task_id) REFERENCES todo_task (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='四象限表';
 
 -- 复习任务表
@@ -154,7 +174,7 @@ CREATE TABLE IF NOT EXISTS todo_reviewplan (
 -- 提醒表
 -- 对应功能：创建提醒、查询未提醒/未读提醒、标记提醒已读
 -- target_type 和 target_id 用来表示提醒属于哪个业务对象，例如 review、task
--- channel 表示提醒渠道，例如 desktop、app、telegramBot
+-- channel 表示提醒渠道，目前仅保留 desktop
 -- is_sent 当前代码中用于表示提醒是否已经处理
 CREATE TABLE IF NOT EXISTS todo_reminder (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '提醒ID',

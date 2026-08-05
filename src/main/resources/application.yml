@@ -6,7 +6,7 @@ spring:
     name: todo
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/todo_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/${MYSQL_DATABASE:todo_db}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:123456}
   data:
@@ -18,8 +18,8 @@ spring:
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    username: ${RABBITMQ_USERNAME:todo}
+    password: ${RABBITMQ_PASSWORD:123456}
     virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
 
 mybatis:
@@ -51,6 +51,6 @@ todo:
       log-path: ${XXL_JOB_EXECUTOR_LOG_PATH:logs/xxl-job}
       log-retention-days: ${XXL_JOB_EXECUTOR_LOG_RETENTION_DAYS:30}
   reminder:
-    scheduler-enabled: false
+    scheduler-enabled: true
     initial-delay-ms: 5000
     scan-delay-ms: 60000

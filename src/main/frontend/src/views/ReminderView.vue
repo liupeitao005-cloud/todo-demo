@@ -14,8 +14,6 @@
         <label>渠道
           <select v-model="form.channel">
             <option value="desktop">桌面通知</option>
-            <option value="telegramBot">Telegram Bot</option>
-            <option value="app">App</option>
           </select>
         </label>
       </div>

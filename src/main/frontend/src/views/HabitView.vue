@@ -172,7 +172,7 @@ const selectedDate = ref(todayKey);
 const calendarMonth = ref(startOfMonth(new Date()));
 const creatorOpen = ref(false);
 const items = ref([]);
-const checks = ref(loadChecks());
+const checks = ref({});
 const form = reactive({ title: "", content: "", dayMinutes: null, minMinutes: null, maxMinutes: null });
 const { loading, status, ok, run } = useRequest();
 
@@ -231,18 +231,6 @@ const weekStats = computed(() => {
 
 const weekCompleted = computed(() => weekStats.value.reduce((sum, day) => sum + day.done, 0));
 const weekTotal = computed(() => weekStats.value.length * items.value.length);
-
-function loadChecks() {
-  try {
-    return JSON.parse(localStorage.getItem("todo-habit-checks") || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveChecks() {
-  localStorage.setItem("todo-habit-checks", JSON.stringify(checks.value));
-}
 
 function toDateKey(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -303,9 +291,13 @@ function isChecked(id) {
   return selectedChecks.value.includes(Number(id));
 }
 
-function toggleCheck(id) {
+async function toggleCheck(id) {
   const key = selectedDate.value;
   const numberId = Number(id);
+  const data = await run(() => habitApi.toggleCheck({ habbitId: numberId, checkDate: key }));
+  if (data?.code !== 200) {
+    return;
+  }
   const set = new Set(checks.value[key] || []);
   if (set.has(numberId)) {
     set.delete(numberId);
@@ -313,7 +305,6 @@ function toggleCheck(id) {
     set.add(numberId);
   }
   checks.value = { ...checks.value, [key]: [...set] };
-  saveChecks();
 }
 
 function habitFrequency(habit) {
@@ -362,6 +353,18 @@ async function loadList(options = {}) {
   items.value = Array.isArray(data?.data) ? data.data : [];
 }
 
+async function loadChecksFromServer() {
+  const data = await habitApi.checks();
+  const next = {};
+  for (const item of Array.isArray(data?.data) ? data.data : []) {
+    const key = String(item.checkDate || "").slice(0, 10);
+    const id = Number(item.habbitId);
+    if (!key || !id) continue;
+    next[key] = [...(next[key] || []), id];
+  }
+  checks.value = next;
+}
+
 async function create() {
   if (!form.title) {
     status.value = "请填写习惯标题";
@@ -380,6 +383,7 @@ async function create() {
 
 onMounted(async () => {
   await loadList({ silent: true });
+  await loadChecksFromServer().catch(() => {});
   if (route.query.create === "1") openCreator();
 });
 </script>
