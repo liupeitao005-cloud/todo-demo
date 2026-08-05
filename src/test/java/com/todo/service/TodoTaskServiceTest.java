@@ -234,13 +234,14 @@ public class TodoTaskServiceTest {
     @Test
     void qiegeHourSuccess(){
         UserContext.setUserId(1L);
+        LocalDateTime startTime = LocalDateTime.of(2026, 8, 5, 9, 0);
         TodoTask parent = new TodoTask();
         parent.setId(1L);
         parent.setTitle("测试任务");
         parent.setContent("测试内容");
         parent.setTaskType("长期任务");
-        parent.setStartTime(LocalDateTime.now());
-        parent.setFinishTime(LocalDateTime.now().plusHours(4));
+        parent.setStartTime(startTime);
+        parent.setFinishTime(startTime.plusHours(4));
         when(todoTaskMapper.selectByID(any(TodoTask.class))).thenReturn(parent);
         when(todoTaskMapper.insert(any(TodoTask.class))).thenReturn(1);
         Result<String> result = todoTaskService.qiegehour(1L);
