@@ -77,6 +77,10 @@ public class TodoReviewService {
         if (userId == null) return Result.fail("未登录");
         int row = todoReviewplanMapper.finish(id, userId);
         if (row <= 0) {
+            TodoReviewplan current = todoReviewplanMapper.selectById(id, userId);
+            if (current != null && Integer.valueOf(1).equals(current.getIsFinish())) {
+                return Result.fail("复习计划已完成，请勿重复操作");
+            }
             return Result.fail("复习计划不存在或无权限");
         }
         todoReminderService.cancelByTarget(userId, "review", id);

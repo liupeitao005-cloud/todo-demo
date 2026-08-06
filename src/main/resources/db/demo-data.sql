@@ -18,9 +18,23 @@ VALUES (
   '$2a$10$gfpTzSSg1..MJWnVQVwlj.Kvwm4VQdcqmBkhyN8f2KwnuswmcO0HO',
   NOW(),
   NOW()
-);
+)
+ON DUPLICATE KEY UPDATE
+  id = LAST_INSERT_ID(id),
+  password = '$2a$10$gfpTzSSg1..MJWnVQVwlj.Kvwm4VQdcqmBkhyN8f2KwnuswmcO0HO',
+  update_time = NOW();
 
 SET @demo_user_id = LAST_INSERT_ID();
+
+DELETE FROM todo_reminder WHERE user_id = @demo_user_id;
+DELETE FROM todo_reviewplan WHERE user_id = @demo_user_id;
+DELETE FROM todo_four WHERE user_id = @demo_user_id;
+DELETE FROM todo_habbit_check WHERE user_id = @demo_user_id;
+DELETE FROM todo_backlog WHERE user_id = @demo_user_id;
+DELETE FROM todo_schedule WHERE user_id = @demo_user_id;
+DELETE FROM todo_habbit WHERE user_id = @demo_user_id;
+DELETE FROM todo_review_task WHERE user_id = @demo_user_id;
+DELETE FROM todo_task WHERE user_id = @demo_user_id;
 
 -- 3. 待办箱演示数据
 -- 对应功能：待办箱管理。

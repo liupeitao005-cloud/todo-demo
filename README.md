@@ -117,7 +117,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/todo_db
     username: root
-    password: 123456
+    password: ${MYSQL_PASSWORD}
 ```
 
 
@@ -137,6 +137,15 @@ src/main/resources/db/demo-data.sql
 
 如果本机安装了 Docker，也可以直接用 Docker Compose 启动 MySQL、Redis、RabbitMQ 和 XXL-JOB：
 
+启动前需要通过 `.env` 文件或系统环境变量提供敏感配置：
+
+```bash
+MYSQL_PASSWORD=请替换为安全密码
+RABBITMQ_PASSWORD=请替换为安全密码
+XXL_JOB_ACCESS_TOKEN=请替换为安全Token
+JWT_SECRET=请替换为至少32字节的JWT密钥
+```
+
 ```bash
 docker compose up -d
 ```
@@ -147,24 +156,24 @@ docker compose up -d
 MySQL：localhost:3306
   数据库：todo_db
   用户名：root
-  密码：123456
+  密码：由 MYSQL_PASSWORD 提供
 
 Redis：localhost:6379
 
 RabbitMQ：localhost:5672
   管理页面：http://localhost:15672
   用户名：todo
-  密码：123456
+  密码：由 RABBITMQ_PASSWORD 提供
 
 XXL-JOB Admin：http://localhost:8088/xxl-job-admin
   用户名：admin
-  密码：123456
+  密码：请首次部署后立即修改
   执行器：todo-executor
   预置任务：扫描到期提醒（scanDueReminderJob，每 1 分钟执行一次）
 ```
 
-应用默认配置已经和 Docker Compose 对齐，不设置环境变量也能连接这些中间件。
-如果要改密码，可以统一使用 `MYSQL_DATABASE`、`MYSQL_PASSWORD`、`RABBITMQ_USERNAME`、`RABBITMQ_PASSWORD` 等环境变量。
+应用和 Docker Compose 不再提交生产默认密码或默认 Token。
+必须统一使用 `MYSQL_DATABASE`、`MYSQL_PASSWORD`、`RABBITMQ_USERNAME`、`RABBITMQ_PASSWORD`、`JWT_SECRET`、`XXL_JOB_ACCESS_TOKEN` 等环境变量提供运行配置。
 
 第一次启动容器时，会自动执行：
 

@@ -18,7 +18,7 @@ public interface TodoTaskMapper {
         @Delete("DELETE FROM todo_task WHERE id=#{id} AND user_id=#{userId}")
         int delete (TodoTask task);
 
-        @Update("UPDATE todo_task SET is_finish=1, is_next=0, finish_time=NOW(), update_time=NOW() WHERE id=#{id} AND user_id=#{userId}")
+        @Update("UPDATE todo_task SET is_finish=1, is_next=0, finish_time=NOW(), update_time=NOW() WHERE id=#{id} AND user_id=#{userId} AND is_finish=0")
         int finish (TodoTask task);
 
         @Update("UPDATE todo_task SET is_next=1, update_time=NOW() WHERE id=#{id} AND user_id=#{userId} AND is_finish=0")

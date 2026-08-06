@@ -165,10 +165,29 @@ public class TodoTaskServiceTest {
     void finishTaskFailWhenNotFound() {
         UserContext.setUserId(1L);
         when(todoTaskMapper.finish(any(TodoTask.class))).thenReturn(0);
+        when(todoTaskMapper.selectByID(any(TodoTask.class))).thenReturn(null);
         Result<String> result = todoTaskService.finishTodoTask(1L);
         assertEquals(400, result.getCode());
         assertEquals("任务不存在或无权限完成", result.getMessage());
         verify(todoTaskMapper).finish(any(TodoTask.class));
+        verify(todoTaskMapper).selectByID(any(TodoTask.class));
+        verify(todoReminderService, never()).cancelByTarget(anyLong(), anyString(), anyLong());
+    }
+    @Test
+    void finishTaskFailWhenAlreadyFinished() {
+        UserContext.setUserId(1L);
+        TodoTask finished = new TodoTask();
+        finished.setId(1L);
+        finished.setUserId(1L);
+        finished.setIsFinish(1);
+        when(todoTaskMapper.finish(any(TodoTask.class))).thenReturn(0);
+        when(todoTaskMapper.selectByID(any(TodoTask.class))).thenReturn(finished);
+        Result<String> result = todoTaskService.finishTodoTask(1L);
+        assertEquals(400, result.getCode());
+        assertEquals("任务已完成，请勿重复操作", result.getMessage());
+        verify(todoTaskMapper).finish(any(TodoTask.class));
+        verify(todoTaskMapper).selectByID(any(TodoTask.class));
+        verify(todoReminderService, never()).cancelByTarget(anyLong(), anyString(), anyLong());
     }
     @Test
     void finishTaskSuccess(){

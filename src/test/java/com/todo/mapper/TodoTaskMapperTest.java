@@ -51,6 +51,21 @@ public class TodoTaskMapperTest extends MapperTestBase{
         assertEquals(1,row);
     }
     @Test
+    void finishDoesNotUpdateAlreadyFinishedTask() {
+        Long userId = createUser();
+        TodoTask task = newTask(userId);
+        todoTaskMapper.insert(task);
+        assertEquals(1, todoTaskMapper.finish(task));
+
+        TodoTask query = new TodoTask();
+        query.setId(task.getId());
+        query.setUserId(userId);
+        LocalDateTime firstFinishTime = todoTaskMapper.selectByID(query).getFinishTime();
+
+        assertEquals(0, todoTaskMapper.finish(task));
+        assertEquals(firstFinishTime, todoTaskMapper.selectByID(query).getFinishTime());
+    }
+    @Test
     void nextSuccess() {
         Long userId = createUser();
         TodoTask task = newTask(userId);

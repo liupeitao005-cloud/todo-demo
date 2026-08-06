@@ -70,10 +70,29 @@ class TodoReviewServiceTest {
     void finishReviewPlanFailWhenNotFound() {
         UserContext.setUserId(1L);
         when(todoReviewplanMapper.finish(anyLong(),anyLong())).thenReturn(0);
+        when(todoReviewplanMapper.selectById(anyLong(), anyLong())).thenReturn(null);
         Result<String> result = todoReviewService.finishReviewPlan(1L);
         assertEquals(400, result.getCode());
         assertEquals("复习计划不存在或无权限", result.getMessage());
         verify(todoReviewplanMapper).finish(anyLong(),anyLong());
+        verify(todoReviewplanMapper).selectById(anyLong(), anyLong());
+        verify(todoReminderService, never()).cancelByTarget(anyLong(), anyString(), anyLong());
+    }
+    @Test
+    void finishReviewPlanFailWhenAlreadyFinished() {
+        UserContext.setUserId(1L);
+        TodoReviewplan finished = new TodoReviewplan();
+        finished.setId(1L);
+        finished.setUserId(1L);
+        finished.setIsFinish(1);
+        when(todoReviewplanMapper.finish(anyLong(), anyLong())).thenReturn(0);
+        when(todoReviewplanMapper.selectById(anyLong(), anyLong())).thenReturn(finished);
+        Result<String> result = todoReviewService.finishReviewPlan(1L);
+        assertEquals(400, result.getCode());
+        assertEquals("复习计划已完成，请勿重复操作", result.getMessage());
+        verify(todoReviewplanMapper).finish(anyLong(), anyLong());
+        verify(todoReviewplanMapper).selectById(anyLong(), anyLong());
+        verify(todoReminderService, never()).cancelByTarget(anyLong(), anyString(), anyLong());
     }
     @Test
     void finishReviewPlanSuccess() {

@@ -4,6 +4,12 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
+      direct:
+        auto-startup: false
   sql:
     init:
       mode: always
@@ -12,3 +18,11 @@ spring:
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
+
+jwt:
+  secret: todo-test-jwt-secret-key-must-be-at-least-32-bytes
+
+todo:
+  xxl-job:
+    enabled: false
+    access-token: todo-test-xxl-job-token

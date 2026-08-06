@@ -4,12 +4,14 @@ import com.xxl.job.core.executor.impl.XxlJobSpringExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableConfigurationProperties(XxlJobProperties.class)
+@ConditionalOnProperty(prefix = "todo.xxl-job", name = "enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class XxlJobConfig {
@@ -24,8 +26,11 @@ public class XxlJobConfig {
         );
         String accessToken = textOrDefault(
                 properties.getAccessToken(),
-                XxlJobProperties.DEFAULT_ACCESS_TOKEN
+                null
         );
+        if (!StringUtils.hasText(accessToken)) {
+            throw new IllegalStateException("todo.xxl-job.access-token must be configured");
+        }
         String appName = textOrDefault(
                 executorProperties.getAppName(),
                 XxlJobProperties.DEFAULT_EXECUTOR_APP_NAME

@@ -37,6 +37,18 @@ public class TodoReviewplanMapperTest extends MapperTestBase {
     }
 
     @Test
+    void finishDoesNotUpdateAlreadyFinishedReviewPlan() {
+        Long userId = createUser();
+        TodoReviewplan reviewplan = newReviewplan(userId);
+        todoReviewplanMapper.insert(reviewplan);
+        assertEquals(1, todoReviewplanMapper.finish(reviewplan.getId(), userId));
+        LocalDateTime firstFinishTime = todoReviewplanMapper.selectById(reviewplan.getId(), userId).getFinishTime();
+
+        assertEquals(0, todoReviewplanMapper.finish(reviewplan.getId(), userId));
+        assertEquals(firstFinishTime, todoReviewplanMapper.selectById(reviewplan.getId(), userId).getFinishTime());
+    }
+
+    @Test
     void listByUserIdIncludesReviewTaskTitleAndContent() {
         Long userId = createUser();
         TodoReviewplan reviewplan = newReviewplan(userId);

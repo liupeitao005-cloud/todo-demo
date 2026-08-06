@@ -99,7 +99,13 @@ public class TodoTaskService{
         task.setId(id);
         task.setUserId(userId);
         int row = todoTaskMapper.finish(task);
-        if (row <= 0) return Result.fail("任务不存在或无权限完成");
+        if (row <= 0) {
+            TodoTask current = todoTaskMapper.selectByID(task);
+            if (current != null && Integer.valueOf(1).equals(current.getIsFinish())) {
+                return Result.fail("任务已完成，请勿重复操作");
+            }
+            return Result.fail("任务不存在或无权限完成");
+        }
         todoReminderService.cancelByTarget(userId, "task", id);
         return Result.success("完成成功");
     }
