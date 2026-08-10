@@ -1,5 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginView from "../LoginView.vue";
 import { userApi } from "../../api/todoApi";
 import { setToken, setUsername } from "../../stores/auth";
@@ -24,6 +24,10 @@ vi.mock("../../stores/auth", () => ({
 }));
 
 describe("LoginView", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("prefills username from route query", async () => {
     const wrapper = mount(LoginView);
     await flushPromises();
@@ -53,8 +57,27 @@ describe("LoginView", () => {
       username: "demo",
       password: "123456"
     }));
-    expect(setToken).toHaveBeenCalledWith("token-123");
-    expect(setUsername).toHaveBeenCalledWith("demo");
+    expect(setToken).toHaveBeenCalledWith("token-123", true);
+    expect(setUsername).toHaveBeenCalledWith("demo", true);
+    expect(routerPush).toHaveBeenCalledWith("/");
+  });
+
+  it("stores login only for the current session when remember me is unchecked", async () => {
+    vi.mocked(userApi.login).mockResolvedValue({ code: 200, data: "token-456" });
+    const wrapper = mount(LoginView);
+
+    await wrapper.get('input[autocomplete="username"]').setValue("session-user");
+    await wrapper.get('input[autocomplete="current-password"]').setValue("123456");
+    await wrapper.get('.remember input[type="checkbox"]').setValue(false);
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(userApi.login).toHaveBeenCalledWith(expect.objectContaining({
+      username: "session-user",
+      password: "123456"
+    }));
+    expect(setToken).toHaveBeenCalledWith("token-456", false);
+    expect(setUsername).toHaveBeenCalledWith("session-user", false);
     expect(routerPush).toHaveBeenCalledWith("/");
   });
 });

@@ -95,7 +95,7 @@
         </label>
 
         <div class="login-options">
-          <label class="remember"><input type="checkbox" /> 记住我</label>
+          <label class="remember"><input v-model="rememberMe" type="checkbox" /> 记住我</label>
         </div>
 
         <button class="primary-action" :disabled="loading" type="submit">登录</button>
@@ -127,6 +127,7 @@ const route = useRoute();
 const router = useRouter();
 const form = reactive({ username: "", password: "" });
 const showPassword = ref(false);
+const rememberMe = ref(true);
 const { loading, status, ok, run } = useRequest();
 
 onMounted(() => {
@@ -149,8 +150,8 @@ async function handleLogin() {
   if (!validate()) return;
   const data = await run(() => userApi.login(form));
   if (data?.code === 200 && data.data) {
-    setToken(data.data);
-    setUsername(form.username);
+    setToken(data.data, rememberMe.value);
+    setUsername(form.username, rememberMe.value);
     router.push("/");
   }
 }
@@ -681,46 +682,77 @@ body {
 
 @media (max-width: 680px) {
   .auth-page {
-    width: calc(100vw - 24px);
-    margin: 12px auto;
-    border-radius: 24px;
+    width: 100vw;
+    min-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .auth-right {
+    order: 1;
+    place-items: start stretch;
+    padding: 28px 20px 24px;
   }
 
   .auth-left {
-    min-height: 680px;
-    padding: 40px 24px 260px;
+    order: 2;
+    min-height: auto;
+    padding: 22px 20px;
   }
 
   .auth-page .brand {
-    font-size: 28px;
+    font-size: 22px;
   }
 
-  .auth-page .hero-copy {
-    margin-top: 64px;
+  .auth-page .brand-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 24px;
   }
 
-  .auth-page .hero-copy h1 {
-    font-size: 44px;
-  }
-
-  .auth-page .hero-copy h2,
-  .auth-page .hero-copy p,
-  .auth-page .feature-list p {
-    font-size: 16px;
-  }
-
-  .auth-page .feature-list strong {
-    font-size: 18px;
-  }
-
-  .auth-page .desk-illustration {
-    width: 440px;
-    transform: translateX(-50%) scale(.78);
-    transform-origin: center bottom;
+  .auth-page .hero-copy,
+  .auth-page .feature-list,
+  .auth-page .desk-illustration,
+  .auth-page .decor,
+  .auth-page .dot-grid {
+    display: none;
   }
 
   .auth-card {
     width: 100%;
+    gap: 16px;
+  }
+
+  .auth-page .form-heading {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .auth-card h2 {
+    font-size: 28px;
+  }
+
+  .auth-card > p,
+  .auth-page .form-heading p,
+  .auth-card label,
+  .auth-page .signup-tip,
+  .auth-page .signup-tip button {
+    font-size: 16px;
+  }
+
+  .auth-card input,
+  .auth-page .primary-action,
+  .auth-page .register-link {
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  .auth-card input {
+    padding: 12px 16px;
+  }
+
+  .auth-page .divider {
+    margin: 6px 0 0;
   }
 }
 </style>

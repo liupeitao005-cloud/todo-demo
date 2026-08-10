@@ -2,7 +2,7 @@ const CACHE_PREFIX = "todo-cache";
 const USERNAME_KEY = "todo-username";
 
 function currentUserKey() {
-  const username = (localStorage.getItem(USERNAME_KEY) || "").trim();
+  const username = (localStorage.getItem(USERNAME_KEY) || sessionStorage.getItem(USERNAME_KEY) || "").trim();
   return encodeURIComponent(username || "anonymous");
 }
 

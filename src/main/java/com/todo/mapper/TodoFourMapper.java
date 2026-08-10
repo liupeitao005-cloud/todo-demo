@@ -14,7 +14,7 @@ import java.util.List;
 @Mapper
 public interface TodoFourMapper {
 
-    @Insert("INSERT INTO todo_four(user_id,task_id,title,content,importance,urgency,start_time,finish_time,create_time,update_time) VALUES (#{userId},#{taskId},#{title},#{content},#{importance},#{urgency},#{startTime},#{finishTime},NOW(),NOW())")
+    @Insert("INSERT INTO todo_four (user_id,task_id,title,content,importance,urgency,start_time,finish_time,create_time,update_time) VALUES (#{userId},#{taskId},#{title},#{content},#{importance},#{urgency},#{startTime},#{finishTime},NOW(),NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(TodoFour todoFour);
 

@@ -4,25 +4,35 @@ import { clearTodoUserCaches } from "@/utils/userCache";
 const TOKEN_KEY = "todo-token";
 const USERNAME_KEY = "todo-username";
 
+function readStoredValue(key) {
+  return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
+}
+
+function writeStoredValue(key, value, remember = true) {
+  localStorage.removeItem(key);
+  sessionStorage.removeItem(key);
+  if (!value) return;
+  const storage = remember ? localStorage : sessionStorage;
+  storage.setItem(key, value);
+}
+
 export const authState = reactive({
-  token: localStorage.getItem(TOKEN_KEY) || "",
-  username: localStorage.getItem(USERNAME_KEY) || ""
+  token: readStoredValue(TOKEN_KEY),
+  username: readStoredValue(USERNAME_KEY)
 });
 
 export function isLoggedIn() {
   return Boolean(authState.token);
 }
 
-export function setToken(token) {
+export function setToken(token, remember = true) {
   authState.token = token || "";
-  if (authState.token) localStorage.setItem(TOKEN_KEY, authState.token);
-  else localStorage.removeItem(TOKEN_KEY);
+  writeStoredValue(TOKEN_KEY, authState.token, remember);
 }
 
-export function setUsername(username) {
+export function setUsername(username, remember = true) {
   authState.username = username || "";
-  if (authState.username) localStorage.setItem(USERNAME_KEY, authState.username);
-  else localStorage.removeItem(USERNAME_KEY);
+  writeStoredValue(USERNAME_KEY, authState.username, remember);
 }
 
 export function logout() {
