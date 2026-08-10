@@ -75,9 +75,11 @@
 </template>
 
 <script setup>
-defineEmits(["close", "submit", "update:selectedType"]);
+import { computed } from "vue";
 
-defineProps({
+const emit = defineEmits(["close", "submit", "update:createForm", "update:selectedType"]);
+
+const props = defineProps({
   createForm: {
     type: Object,
     required: true
@@ -111,4 +113,14 @@ defineProps({
     default: false
   }
 });
+
+const createForm = computed(() => new Proxy(props.createForm, {
+  get(target, key) {
+    return target[key];
+  },
+  set(_target, key, value) {
+    emit("update:createForm", { [key]: value });
+    return true;
+  }
+}));
 </script>

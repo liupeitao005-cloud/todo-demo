@@ -51,6 +51,7 @@
       :task-type-options="taskTypeOptions"
       @close="closeEditor"
       @submit="saveTask"
+      @update:form="updateForm"
     />
   </section>
 </template>
@@ -89,4 +90,8 @@ const {
   status,
   taskTypeOptions
 } = useTasks();
+
+function updateForm(patch) {
+  Object.assign(form, patch);
+}
 </script>

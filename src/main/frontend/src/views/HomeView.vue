@@ -51,6 +51,7 @@
       :submitting="submitting"
       @close="closeModal"
       @submit="submitCreate"
+      @update:create-form="updateCreateForm"
     />
   </section>
 </template>
@@ -342,6 +343,10 @@ function openCreateModal(type = "backlog") {
 function closeModal() {
   if (submitting.value) return;
   modalOpen.value = false;
+}
+
+function updateCreateForm(patch) {
+  Object.assign(createForm, patch);
 }
 
 function optimisticCreate(type, payload) {
