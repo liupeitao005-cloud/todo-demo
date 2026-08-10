@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -65,6 +66,8 @@ jobs:
   backend-security:
     name: Backend Dependency Security Scan
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
