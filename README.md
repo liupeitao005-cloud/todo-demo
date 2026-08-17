@@ -83,27 +83,22 @@ RabbitMQ 3
 
 ## 配置环境变量
 
-后端运行必须提供敏感配置。可以在系统环境变量或 `.env` 中设置：
+生产配置从系统环境变量或 `.env` 读取，避免把真实密码和 Token 写入代码仓库。本地演示可以直接参考 `.env.example`：
 
 ```bash
 MYSQL_DATABASE=todo_db
 MYSQL_USERNAME=root
-MYSQL_PASSWORD=请替换为本地密码
-RABBITMQ_USERNAME=todo
-RABBITMQ_PASSWORD=请替换为本地密码
-JWT_SECRET=请替换为至少32字节的JWT密钥
-XXL_JOB_ACCESS_TOKEN=请替换为安全Token
-```
-
-可选配置：
-
-```bash
+MYSQL_PASSWORD=123456
 REDIS_HOST=localhost
 REDIS_PORT=6379
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=guest
+RABBITMQ_PASSWORD=guest
+JWT_SECRET=todo-local-dev-jwt-secret-key-must-be-at-least-32-bytes
 XXL_JOB_ADMIN_ADDRESSES=http://127.0.0.1:8088/xxl-job-admin
+XXL_JOB_ACCESS_TOKEN=todo-demo-xxl-token
 ```
+
+本地直接运行后端时推荐启用 `local` profile，它会使用 `application-local.yml` 中的演示默认值；Docker Compose 也使用同一组默认账号密码。生产环境应覆盖这些值。
 
 后端配置文件：
 
@@ -132,9 +127,9 @@ docker compose up -d
 ```text
 MySQL
   地址：localhost:3306
-  数据库：${MYSQL_DATABASE:-todo_db}
+  数据库：todo_db
   用户名：root
-  密码：MYSQL_PASSWORD
+  密码：123456
 
 Redis
   地址：localhost:6379
@@ -142,12 +137,15 @@ Redis
 RabbitMQ
   AMQP：localhost:5672
   管理页面：http://localhost:15672
-  用户名：${RABBITMQ_USERNAME:-todo}
-  密码：RABBITMQ_PASSWORD
+  用户名：guest
+  密码：guest
 
 XXL-JOB Admin
   页面：http://localhost:8088/xxl-job-admin
+  登录账号：admin / 123456
+  AccessToken：todo-demo-xxl-token
   后端执行器默认端口：9999
+  预置任务：scanDueReminderJob，每分钟扫描到期提醒
 ```
 
 首次初始化 MySQL 数据卷时会自动执行：
@@ -191,11 +189,13 @@ src/main/resources/db/demo-data.sql
 
 ## 启动后端
 
-在仓库根目录执行：
+本地演示推荐启用 `local` profile，直接使用 `.env.example` 对应的演示默认值：
 
 ```bash
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+如果使用生产默认配置，则需要提前设置 `MYSQL_PASSWORD`、`RABBITMQ_PASSWORD`、`JWT_SECRET`、`XXL_JOB_ACCESS_TOKEN` 等环境变量。
 
 后端地址：
 
@@ -515,9 +515,9 @@ http://localhost:8080/v3/api-docs
 
 ## 常见问题
 
-### 1. 后端启动时报 MYSQL_PASSWORD 缺失
+### 1. 后端启动时报 MYSQL_PASSWORD / JWT_SECRET 缺失
 
-说明没有设置环境变量。设置 `MYSQL_PASSWORD` 后重新启动。
+说明当前使用的是生产默认配置，但没有设置必要环境变量。本地演示可改用 `local` profile 启动；生产环境需要按 `.env.example` 设置 `MYSQL_PASSWORD`、`RABBITMQ_PASSWORD`、`JWT_SECRET`、`XXL_JOB_ACCESS_TOKEN` 等变量。
 
 ### 2. 登录后接口返回 401
 

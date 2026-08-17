@@ -35,6 +35,7 @@
         </article>
       </div>
 
+
       <div class="desk-illustration" aria-hidden="true">
         <div class="plant"></div>
         <div class="calendar-art">

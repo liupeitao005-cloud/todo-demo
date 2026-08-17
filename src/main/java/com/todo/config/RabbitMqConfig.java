@@ -16,25 +16,6 @@ public class RabbitMqConfig {
     private final MqProperties properties;
 
     @Bean
-    public DirectExchange todoTestExchange() {
-
-        return new DirectExchange(properties.getTest().getExchange(), true, false);
-    }
-
-    @Bean
-    public Queue todoTestQueue() {
-
-        return new Queue(properties.getTest().getQueue(), true);
-    }
-
-    @Bean
-    public Binding todoTestBinding(DirectExchange todoTestExchange, Queue todoTestQueue) {
-        return BindingBuilder.bind(todoTestQueue)
-                .to(todoTestExchange)
-                .with(properties.getTest().getRoutingKey());
-    }
-
-    @Bean
     public DirectExchange todoReminderExchange() {
 
         return new DirectExchange(properties.getReminder().getExchange(), true, false);

@@ -137,7 +137,7 @@ INSERT INTO xxl_job_info (
   trigger_next_time
 ) VALUES (
   1,
-  1,
+  (SELECT id FROM xxl_job_group WHERE app_name = 'todo-executor' LIMIT 1),
   '扫描到期提醒',
   NOW(),
   NOW(),

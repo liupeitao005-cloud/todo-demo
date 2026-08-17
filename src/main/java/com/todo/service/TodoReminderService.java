@@ -216,25 +216,29 @@ public class TodoReminderService {
         if (reminderId == null) {
             return false;
         }
-        String doneKey = "todo:reminder:done:" + reminderId;
+        TodoReminder reminder = todoReminderMapper.selectByIdOnly(reminderId);
+        if (reminder == null) {
+            log.warn("Reminder message ignored because reminder does not exist. reminderId={}", reminderId);
+            return false;
+        }
+        if (reminder.getUserId() == null) {
+            log.warn("Reminder message ignored because reminder has no user. reminderId={}", reminderId);
+            return false;
+        }
+        String doneKey = reminderRedisKey("done", reminder.getUserId(), reminderId);
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(doneKey))) {
             log.info("Reminder message skipped because it was already processed. reminderId={}", reminderId);
             return false;
         }
-        String processingKey = "todo:reminder:processing:" + reminderId;
+        String processingKey = reminderRedisKey("processing", reminder.getUserId(), reminderId);
         Boolean locked = stringRedisTemplate.opsForValue()
                 .setIfAbsent(processingKey, "1", Duration.ofMinutes(10));
         if (!Boolean.TRUE.equals(locked)) {
             log.info("Reminder message skipped because it is being processed. reminderId={}", reminderId);
             return false;
         }
-        TodoReminder reminder = todoReminderMapper.selectByIdOnly(reminderId);
         boolean processedSuccessfully = false;
         try {
-            if (reminder == null) {
-                log.warn("Reminder message ignored because reminder does not exist. reminderId={}", reminderId);
-                return false;
-            }
             if (reminder.getIsSent() != null && reminder.getIsSent() == 1) {
                 stringRedisTemplate.opsForValue().set(doneKey, "1", Duration.ofDays(1));
                 return false;
@@ -254,6 +258,11 @@ public class TodoReminderService {
             }
         }
     }
+
+    static String reminderRedisKey(String state, Long userId, Long reminderId) {
+        return "todo:reminder:user:" + userId + ":" + state + ":" + reminderId;
+    }
+
     private boolean isClientDeliveredChannel(String channel) {
         return "desktop".equals(channel);
     }

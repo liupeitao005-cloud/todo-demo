@@ -120,7 +120,7 @@
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { userApi } from "@/api/todoApi";
-import { setToken, setUsername } from "@/stores/auth";
+import { getRememberedUsername, setRememberedUsername, setToken, setUsername } from "@/stores/auth";
 import { useRequest } from "@/composables/useRequest";
 
 const route = useRoute();
@@ -134,6 +134,12 @@ onMounted(() => {
   if (typeof route.query.username === "string") {
     form.username = route.query.username;
     form.password = "";
+    return;
+  }
+  const rememberedUsername = getRememberedUsername();
+  if (rememberedUsername) {
+    form.username = rememberedUsername;
+    rememberMe.value = true;
   }
 });
 
@@ -152,6 +158,7 @@ async function handleLogin() {
   if (data?.code === 200 && data.data) {
     setToken(data.data, rememberMe.value);
     setUsername(form.username, rememberMe.value);
+    setRememberedUsername(form.username, rememberMe.value);
     router.push("/");
   }
 }

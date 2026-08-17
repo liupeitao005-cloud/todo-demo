@@ -6,7 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ConfigurationProperties(prefix = "todo.mq")
 public class MqProperties {
-    private Destination test = new Destination();
     private Destination reminder = new Destination();
 
     @Data

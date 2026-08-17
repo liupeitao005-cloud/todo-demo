@@ -32,10 +32,6 @@ jwt:
 
 todo:
   mq:
-    test:
-      exchange: todo.test.exchange
-      queue: todo.test.queue
-      routing-key: todo.test.routing
     reminder:
       exchange: todo.reminder.exchange
       queue: todo.reminder.queue

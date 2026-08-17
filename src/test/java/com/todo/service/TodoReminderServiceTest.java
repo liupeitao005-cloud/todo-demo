@@ -142,6 +142,14 @@ class TodoReminderServiceTest {
     }
 
     @Test
+    void reminderRedisKeyContainsUserId() {
+        assertEquals(
+                "todo:reminder:user:7:done:103",
+                TodoReminderService.reminderRedisKey("done", 7L, 103L)
+        );
+    }
+
+    @Test
     void cancelByTargetSuccess() {
         todoReminderService.cancelByTarget(1L, "task", 2L);
 

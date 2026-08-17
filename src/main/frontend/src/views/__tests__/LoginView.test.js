@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginView from "../LoginView.vue";
 import { userApi } from "../../api/todoApi";
-import { setToken, setUsername } from "../../stores/auth";
+import { getRememberedUsername, setRememberedUsername, setToken, setUsername } from "../../stores/auth";
 
 const routerPush = vi.hoisted(() => vi.fn());
 const routeQuery = vi.hoisted(() => ({ username: "from-query" }));
@@ -19,6 +19,8 @@ vi.mock("../../api/todoApi", () => ({
 }));
 
 vi.mock("../../stores/auth", () => ({
+  getRememberedUsername: vi.fn(),
+  setRememberedUsername: vi.fn(),
   setToken: vi.fn(),
   setUsername: vi.fn()
 }));
@@ -26,6 +28,8 @@ vi.mock("../../stores/auth", () => ({
 describe("LoginView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    routeQuery.username = "from-query";
+    vi.mocked(getRememberedUsername).mockReturnValue("");
   });
 
   it("prefills username from route query", async () => {
@@ -59,6 +63,7 @@ describe("LoginView", () => {
     }));
     expect(setToken).toHaveBeenCalledWith("token-123", true);
     expect(setUsername).toHaveBeenCalledWith("demo", true);
+    expect(setRememberedUsername).toHaveBeenCalledWith("demo", true);
     expect(routerPush).toHaveBeenCalledWith("/");
   });
 
@@ -78,6 +83,18 @@ describe("LoginView", () => {
     }));
     expect(setToken).toHaveBeenCalledWith("token-456", false);
     expect(setUsername).toHaveBeenCalledWith("session-user", false);
+    expect(setRememberedUsername).toHaveBeenCalledWith("session-user", false);
     expect(routerPush).toHaveBeenCalledWith("/");
+  });
+
+  it("prefills remembered username when no route username is provided", async () => {
+    routeQuery.username = undefined;
+    vi.mocked(getRememberedUsername).mockReturnValue("remembered-user");
+
+    const wrapper = mount(LoginView);
+    await flushPromises();
+
+    expect(wrapper.get('input[autocomplete="username"]').element.value).toBe("remembered-user");
+    expect(wrapper.get('.remember input[type="checkbox"]').element.checked).toBe(true);
   });
 });

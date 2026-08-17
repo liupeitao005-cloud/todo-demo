@@ -3,6 +3,7 @@ import { clearTodoUserCaches } from "@/utils/userCache";
 
 const TOKEN_KEY = "todo-token";
 const USERNAME_KEY = "todo-username";
+const REMEMBERED_USERNAME_KEY = "todo-remembered-username";
 
 function readStoredValue(key) {
   return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
@@ -33,6 +34,18 @@ export function setToken(token, remember = true) {
 export function setUsername(username, remember = true) {
   authState.username = username || "";
   writeStoredValue(USERNAME_KEY, authState.username, remember);
+}
+
+export function getRememberedUsername() {
+  return localStorage.getItem(REMEMBERED_USERNAME_KEY) || "";
+}
+
+export function setRememberedUsername(username, remember = true) {
+  if (remember && username) {
+    localStorage.setItem(REMEMBERED_USERNAME_KEY, username);
+  } else {
+    localStorage.removeItem(REMEMBERED_USERNAME_KEY);
+  }
 }
 
 export function logout() {
